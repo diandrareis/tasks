@@ -1,209 +1,352 @@
-<script>
-    // --- Configuração do Supabase (Mantida) ---
-    const SUPABASE_URL = 'https://uwngmtgcxatmhsyplddk.supabase.co'; 
-    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV3bmdtdGdjeGF0bWhzeXBsZGRrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA1NzM3MjMsImV4cCI6MjA3NjE0OTcyM30.kJU3l9QTbJUTjX6kUBuorox9qAfmw6pasN5yRNj7C24'; 
-    const TABLE_NAME = 'daily_tasks';
-    const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Planejador de Capacidade Diária</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        /* --- CSS de Estilização --- */
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f7f8;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
 
-    // --- Variáveis e Seletores (Mantidos) ---
-    const numTasksInput = document.getElementById('numTasks');
-    const taskDateInput = document.getElementById('taskDate');
-    const scheduledTasksList = document.getElementById('scheduledTasksList');
-    let scheduledTasks = {};
+        .container {
+            background-color: #ffffff;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 500px;
+            margin-bottom: 20px;
+        }
 
-    // ----------------------------------------------------------------------
-    // 💡 FUNÇÕES ESSENCIAIS QUE DEVEM PERMANECER GLOBAIS (Chamadas pelo HTML)
-    // ----------------------------------------------------------------------
+        h1 {
+            color: #007bff;
+            text-align: center;
+            margin-bottom: 25px;
+        }
 
-    /**
-     * Função global para salvar a contagem (chamada pelo <button onclick="saveCount()">).
-     */
-    async function saveCount() {
-        const selectedDate = taskDateInput.value;
-        const numTasks = parseInt(numTasksInput.value);
+        .form-group {
+            margin-bottom: 25px;
+        }
 
-        if (isNaN(numTasks) || numTasks < 1) {
-            alert('Por favor, insira um número válido de tarefas (mínimo 1).');
-            return;
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #555;
+        }
+
+        input[type="date"], input[type="number"], button {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            box-sizing: border-box;
+            transition: border 0.3s, background-color 0.3s;
+        }
+
+        /* --- Estilos de Alerta para o Campo de Número (Input) --- */
+        .alert-yellow { border: 3px solid #ffc107 !important; background-color: #fffbe6; }
+        .alert-red { border: 3px solid #dc3545 !important; background-color: #f8d7da; }
+        
+        button {
+            background-color: #007bff;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            margin-top: 10px;
+        }
+
+        button:hover { background-color: #0056b3; }
+        
+        /* --- Estilos para o Histórico/Resumo Geral --- */
+        #allTasksSummary {
+            width: 100%;
+            max-width: 500px;
+        }
+
+        #allTasksSummary h2 {
+            color: #333;
+            border-bottom: 2px solid #ccc;
+            padding-bottom: 5px;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .summary-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 15px;
+            margin-bottom: 8px;
+            border-radius: 6px;
+            font-size: 1em;
+            font-weight: bold;
+            border-left: 5px solid;
         }
         
-        // As funções internas são chamadas do escopo interno
-        const success = await saveTaskCountToDB(selectedDate, numTasks);
+        /* Alerta Verde (Carga Baixa/Normal <= 15) */
+        .summary-green { background-color: #e6ffec; border-left-color: #28a745; color: #218838; }
+        /* Alerta Amarelo (Carga Alta > 15) */
+        .summary-yellow { background-color: #fffbe6; border-left-color: #ffc107; color: #856404; }
+        /* Alerta Vermelho (Carga Excessiva >= 20) */
+        .summary-red { background-color: #f8d7da; border-left-color: #dc3545; color: #721c24; }
 
-        if (success) {
-            scheduledTasks[selectedDate] = numTasks;
-            displayAllScheduledTasks();
-            alert(`Contagem de ${numTasks} tarefas para ${formatDisplayDate(selectedDate)} salva com sucesso no banco de dados!`);
-        }
-    }
-
-    /**
-     * Função global para remover uma tarefa (chamada pelos botões "×" dinâmicos).
-     */
-    async function deleteTaskCount(date) {
-        if (!confirm(`Tem certeza que deseja remover o agendamento para ${formatDisplayDate(date)}?`)) {
-            return;
-        }
+        .summary-item .date { flex-grow: 1; }
+        .summary-item .count { font-size: 1.2em; padding: 0 10px; }
         
-        const { error } = await supabase
-            .from(TABLE_NAME)
-            .delete()
-            .eq('date', date);
-
-        if (error) {
-            console.error('Erro ao remover do Supabase:', error);
-            alert('Erro ao remover dados. Verifique o console.');
-            return;
+        /* Botão de Remover */
+        .delete-btn {
+            background: none;
+            border: none;
+            color: #dc3545;
+            cursor: pointer;
+            font-size: 1.2em;
+            padding: 0 5px;
+            transition: color 0.2s;
         }
+        .delete-btn:hover { color: #a52834; }
+    </style>
+</head>
+<body>
 
-        delete scheduledTasks[date];
-        displayAllScheduledTasks();
-        alert(`Agendamento para ${formatDisplayDate(date)} removido com sucesso!`);
-        
-        if (taskDateInput.value === date) {
-            numTasksInput.value = 1;
-            checkTaskAlert();
-        }
-    }
+    <div class="container">
+        <h1>🔢 Contador de Capacidade Diária</h1>
 
+        <div class="form-group">
+            <label for="taskDate">Selecione a Data:</label>
+            <input type="date" id="taskDate" required>
+        </div>
 
-    // ----------------------------------------------------------------------
-    // 💡 ESCOPO INTERNO (Funções internas não globais)
-    // ----------------------------------------------------------------------
+        <div class="form-group">
+            <label for="numTasks">Quantas tarefas (Total) você planeja para este dia?</label>
+            <input type="number" id="numTasks" min="1" value="1" oninput="checkTaskAlert()" required>
+        </div>
 
-    (function() {
-        // --- Funções de Banco de Dados ---
+        <button onclick="saveCount()">Salvar Contagem Diária</button>
+    </div>
+    
+    <div id="allTasksSummary">
+        <h2>📅 Dias Agendados</h2>
+        <div id="scheduledTasksList">
+            </div>
+    </div>
 
-        async function loadTasks() {
-            const { data, error } = await supabase
-                .from(TABLE_NAME)
-                .select('date, task_count');
+    <script>
+        // --- Configuração do Supabase ---
+        // ⚠️ SUBSTITUA COM SUAS CHAVES REAIS!
+        const SUPABASE_URL = 'https://uwngmtgcxatmhsyplddk.supabase.co'; 
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV3bmdtdGdjeGF0bWhzeXBsZGRrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA1NzM3MjMsImV4cCI6MjA3NjE0OTcyM30.kJU3l9QTbJUTjX6kUBuorox9qAfmw6pasN5yRNj7C24'; 
+        const TABLE_NAME = 'daily_tasks';
+        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-            if (error) {
-                console.error('Erro ao carregar tarefas do Supabase:', error);
-                // Não alertamos aqui, pois a página deve carregar mesmo com erro de leitura.
+        // --- Variáveis e Seletores (Escopo Global) ---
+        const numTasksInput = document.getElementById('numTasks');
+        const taskDateInput = document.getElementById('taskDate');
+        const scheduledTasksList = document.getElementById('scheduledTasksList');
+        let scheduledTasks = {};
+
+        // ----------------------------------------------------------------------
+        // FUNÇÕES GLOBAIS (Chamadas DIRETAMENTE pelo HTML)
+        // ----------------------------------------------------------------------
+
+        /**
+         * 1. Função Global: Salva a contagem (chamada pelo onclick do botão).
+         */
+        async function saveCount() {
+            const selectedDate = taskDateInput.value;
+            const numTasks = parseInt(numTasksInput.value);
+
+            if (isNaN(numTasks) || numTasks < 1) {
+                alert('Por favor, insira um número válido de tarefas (mínimo 1).');
                 return;
             }
+            
+            // Chama a função interna
+            const success = await saveTaskCountToDB(selectedDate, numTasks);
 
-            scheduledTasks = data.reduce((acc, row) => {
-                acc[row.date] = row.task_count;
-                return acc;
-            }, {});
+            if (success) {
+                scheduledTasks[selectedDate] = numTasks;
+                displayAllScheduledTasks();
+                alert(`Contagem de ${numTasks} tarefas para ${formatDisplayDate(selectedDate)} salva com sucesso no banco de dados!`);
+            }
         }
 
-        async function saveTaskCountToDB(date, count) {
+        /**
+         * 2. Função Global: Remove uma tarefa (chamada pelos botões "×" dinâmicos).
+         */
+        async function deleteTaskCount(date) {
+            if (!confirm(`Tem certeza que deseja remover o agendamento para ${formatDisplayDate(date)}?`)) {
+                return;
+            }
+            
             const { error } = await supabase
                 .from(TABLE_NAME)
-                .upsert({ date: date, task_count: count }, { onConflict: 'date' }); 
+                .delete()
+                .eq('date', date);
 
             if (error) {
-                console.error('Erro ao salvar no Supabase:', error);
-                alert('Erro ao salvar dados. Verifique o console.');
-                return false;
-            }
-            return true;
-        }
-
-        // --- Funções de Formato e Alerta ---
-        
-        function formatDisplayDate(isoDate) {
-            if (!isoDate) return '';
-            const parts = isoDate.split('-');
-            return `${parts[2]}/${parts[1]}/${parts[0]}`;
-        }
-
-        function checkTaskAlert() {
-            const numTasks = parseInt(numTasksInput.value);
-            numTasksInput.classList.remove('alert-yellow', 'alert-red');
-
-            if (numTasks >= 20) {
-                numTasksInput.classList.add('alert-red');
-            } else if (numTasks > 15) {
-                numTasksInput.classList.add('alert-yellow');
-            }
-        }
-        
-        function getAlertClass(count) {
-            if (count >= 20) {
-                return 'summary-red';
-            } else if (count > 15) {
-                return 'summary-yellow';
-            } else if (count > 0) {
-                return 'summary-green';
-            }
-            return '';
-        }
-
-        // --- Funções de Exibição ---
-
-        function displayAllScheduledTasks() {
-            scheduledTasksList.innerHTML = '';
-            
-            const dates = Object.keys(scheduledTasks).sort();
-            
-            if (dates.length === 0) {
-                scheduledTasksList.innerHTML = '<p style="text-align: center; color: #777;">Nenhum dia agendado ainda.</p>';
+                console.error('Erro ao remover do Supabase:', error);
+                alert('Erro ao remover dados. Verifique o console e as políticas RLS.');
                 return;
             }
 
-            dates.forEach(date => {
-                const count = scheduledTasks[date];
-                if (count > 0) {
-                    const alertClass = getAlertClass(count);
-                    const displayDate = formatDisplayDate(date);
-                    
-                    const item = document.createElement('div');
-                    item.className = `summary-item ${alertClass}`;
-                    // Note que 'deleteTaskCount' é chamado globalmente
-                    item.innerHTML = `
-                        <span class="date">${displayDate}</span>
-                        <span class="count">${count} Tasks</span>
-                        <button class="delete-btn" onclick="deleteTaskCount('${date}')" title="Remover Agendamento">
-                            &times;
-                        </button>
-                    `;
-                    scheduledTasksList.appendChild(item);
-                }
-            });
+            delete scheduledTasks[date];
+            displayAllScheduledTasks();
+            alert(`Agendamento para ${formatDisplayDate(date)} removido com sucesso!`);
+            
+            if (taskDateInput.value === date) {
+                numTasksInput.value = 1;
+                checkTaskAlert();
+            }
         }
 
-        // --- Inicialização e Eventos ---
-        
-        window.onload = async function() { 
-            await loadTasks();
+
+        // ----------------------------------------------------------------------
+        // ESCOPO PROTEGIDO (IIFE - Funções Auxiliares)
+        // ----------------------------------------------------------------------
+
+        (function() {
+            // --- Funções de Banco de Dados ---
+
+            async function loadTasks() {
+                const { data, error } = await supabase
+                    .from(TABLE_NAME)
+                    .select('date, task_count');
+
+                if (error) {
+                    console.error('Erro ao carregar tarefas do Supabase:', error);
+                    // Falha silenciosa na leitura para não quebrar o carregamento.
+                    return;
+                }
+
+                scheduledTasks = data.reduce((acc, row) => {
+                    acc[row.date] = row.task_count;
+                    return acc;
+                }, {});
+            }
+
+            async function saveTaskCountToDB(date, count) {
+                const { error } = await supabase
+                    .from(TABLE_NAME)
+                    .upsert({ date: date, task_count: count }, { onConflict: 'date' }); 
+
+                if (error) {
+                    console.error('Erro ao salvar no Supabase:', error);
+                    alert('Erro ao salvar dados. Verifique o console e as políticas RLS.');
+                    return false;
+                }
+                return true;
+            }
+
+            // --- Funções de Formato e Alerta ---
             
-            const initialDate = new Date().toISOString().split('T')[0];
-            taskDateInput.value = initialDate;
-            
-            if (scheduledTasks[initialDate]) {
-                numTasksInput.value = scheduledTasks[initialDate];
-            } else {
-                numTasksInput.value = 1; 
+            function formatDisplayDate(isoDate) {
+                if (!isoDate) return '';
+                const parts = isoDate.split('-');
+                return `${parts[2]}/${parts[1]}/${parts[0]}`;
+            }
+
+            function checkTaskAlert() {
+                const numTasks = parseInt(numTasksInput.value);
+                numTasksInput.classList.remove('alert-yellow', 'alert-red');
+
+                if (numTasks >= 20) {
+                    numTasksInput.classList.add('alert-red');
+                } else if (numTasks > 15) {
+                    numTasksInput.classList.add('alert-yellow');
+                }
             }
             
-            checkTaskAlert(); 
-            displayAllScheduledTasks();
-        };
-        
-        taskDateInput.addEventListener('change', function() {
-            const selectedDate = taskDateInput.value;
+            function getAlertClass(count) {
+                if (count >= 20) {
+                    return 'summary-red';
+                } else if (count > 15) {
+                    return 'summary-yellow';
+                } else if (count > 0) {
+                    return 'summary-green';
+                }
+                return '';
+            }
+
+            // --- Funções de Exibição ---
+
+            function displayAllScheduledTasks() {
+                scheduledTasksList.innerHTML = '';
+                
+                const dates = Object.keys(scheduledTasks).sort();
+                
+                if (dates.length === 0) {
+                    scheduledTasksList.innerHTML = '<p style="text-align: center; color: #777;">Nenhum dia agendado ainda.</p>';
+                    return;
+                }
+
+                dates.forEach(date => {
+                    const count = scheduledTasks[date];
+                    if (count > 0) {
+                        const alertClass = getAlertClass(count);
+                        const displayDate = formatDisplayDate(date);
+                        
+                        const item = document.createElement('div');
+                        item.className = `summary-item ${alertClass}`;
+                        item.innerHTML = `
+                            <span class="date">${displayDate}</span>
+                            <span class="count">${count} Tasks</span>
+                            <button class="delete-btn" onclick="deleteTaskCount('${date}')" title="Remover Agendamento">
+                                &times;
+                            </button>
+                        `;
+                        scheduledTasksList.appendChild(item);
+                    }
+                });
+            }
+
+            // --- Inicialização e Eventos ---
             
-            const savedCount = scheduledTasks[selectedDate] || 1; 
-            numTasksInput.value = savedCount;
+            window.onload = async function() { 
+                await loadTasks();
+                
+                const initialDate = new Date().toISOString().split('T')[0];
+                taskDateInput.value = initialDate;
+                
+                if (scheduledTasks[initialDate]) {
+                    numTasksInput.value = scheduledTasks[initialDate];
+                } else {
+                    numTasksInput.value = 1; 
+                }
+                
+                checkTaskAlert(); 
+                displayAllScheduledTasks();
+            };
             
-            checkTaskAlert();
-        });
+            taskDateInput.addEventListener('change', function() {
+                const selectedDate = taskDateInput.value;
+                
+                const savedCount = scheduledTasks[selectedDate] || 1; 
+                numTasksInput.value = savedCount;
+                
+                checkTaskAlert();
+            });
 
-        // Torna as funções internas necessárias acessíveis às funções globais
-        // Esta é uma solução alternativa para garantir que as funções globais possam chamar as funções internas
-        window.saveTaskCountToDB = saveTaskCountToDB;
-        window.formatDisplayDate = formatDisplayDate;
-        window.displayAllScheduledTasks = displayAllScheduledTasks;
-        window.checkTaskAlert = checkTaskAlert;
+            // EXPÕE funções internas que são necessárias para as funções globais (saveCount, deleteTaskCount)
+            window.saveTaskCountToDB = saveTaskCountToDB;
+            window.formatDisplayDate = formatDisplayDate;
+            window.displayAllScheduledTasks = displayAllScheduledTasks;
+            window.checkTaskAlert = checkTaskAlert;
 
-    })(); // Fim do IIFE
+        })(); // Fim do IIFE
 
-    // Note: As funções globais saveCount() e deleteTaskCount() ainda dependem 
-    // das funções internas, mas agora o resto do código está isolado.
+    </script>
 
-</script>
+</body>
+</html>
