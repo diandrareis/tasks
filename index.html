@@ -143,17 +143,18 @@
     </div>
 
     <script>
-        // --- Configuração do Supabase (CREDENCAIS ATUALIZADAS) ---
+        // --- Configuração do Supabase ---
         const SUPABASE_URL = 'https://uwngmtgcxatmhsyplddk.supabase.co'; 
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV3bmdtdGdjeGF0bWhzeXBsZGRrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA1NzM3MjMsImV4cCI6MjA3NjE0OTcyM30.kJU3l9QTbJUTjX6kUBuorox9qAfmw6pasN5yRNj7C24'; 
         const TABLE_NAME = 'daily_tasks'; 
+        
+        // --- 🔑 Conexão e Variáveis MOVIDAS PARA O ESCOPO GLOBAL (Correção do ReferenceError) ---
         const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-        // --- Variáveis e Seletores (Escopo Global) ---
         const numTasksInput = document.getElementById('numTasks');
         const taskDateInput = document.getElementById('taskDate');
         const scheduledTasksList = document.getElementById('scheduledTasksList');
         let scheduledTasks = {};
+        // ---------------------------------------------------------------------------------------
 
         // ----------------------------------------------------------------------
         // FUNÇÕES GLOBAIS (Chamadas diretamente pelo HTML)
@@ -163,6 +164,7 @@
          * 1. Função Global: Salva a contagem (chamada pelo onclick do botão).
          */
         async function saveCount() {
+            // Agora taskDateInput e numTasksInput são acessíveis.
             const selectedDate = taskDateInput.value;
             const numTasks = parseInt(numTasksInput.value);
 
@@ -171,7 +173,8 @@
                 return;
             }
             
-            const success = await saveTaskCountToDB(selectedDate, numTasks);
+            // Chama a função de banco de dados (que está no IIFE).
+            const success = await saveTaskCountToDB(selectedDate, numTasks); 
 
             if (success) {
                 scheduledTasks[selectedDate] = numTasks;
@@ -210,7 +213,7 @@
         }
 
         // ----------------------------------------------------------------------
-        // ESCOPO PROTEGIDO (IIFE - Funções Auxiliares)
+        // ESCOPO AUXILIAR (IIFE - Funções de Apoio)
         // ----------------------------------------------------------------------
 
         (function() {
@@ -235,11 +238,9 @@
             async function saveTaskCountToDB(date, count) {
                 const { error } = await supabase
                     .from(TABLE_NAME)
-                    // Usa upsert para INSERIR novo dia ou ATUALIZAR dia existente
                     .upsert({ date: date, task_count: count }, { onConflict: 'date' }); 
 
                 if (error) {
-                    // É aqui que o erro de chave/RLS apareceria
                     console.error('Erro ao salvar no Supabase:', error);
                     alert('Falha ao salvar. Verifique se as suas chaves e RLS estão corretos no console.');
                     return false;
@@ -336,7 +337,7 @@
                 checkTaskAlert();
             });
 
-            // EXPÕE funções internas necessárias para as funções globais
+            // EXPÕE funções auxiliares necessárias para o escopo global
             window.saveTaskCountToDB = saveTaskCountToDB;
             window.formatDisplayDate = formatDisplayDate;
             window.displayAllScheduledTasks = displayAllScheduledTasks;
