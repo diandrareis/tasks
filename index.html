@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Planejador de Capacidade Diária</title>
     <style>
-        /* --- CSS de Estilização --- */
+        /* --- CSS de Estilização (Conforme a Imagem) --- */
         body {
             font-family: Arial, sans-serif;
             background-color: #f4f7f8;
@@ -27,7 +27,7 @@
             margin-bottom: 20px;
         }
 
-        /* AJUSTE: Titulo Principal com o Icone Inserido no HTML */
+        /* Titulo Principal */
         h1 {
             color: #007bff;
             text-align: center;
@@ -58,16 +58,16 @@
             font-size: 1em;
         }
         
-        /* AJUSTE: O input de data na imagem está sem borda inferior. */
+        /* Input de data sem borda inferior, conforme a imagem. */
         #taskDate {
             border: none;
-            border-bottom: 1px solid #ccc; /* Dá uma separação sutil */
+            border-bottom: 1px solid #ccc;
             padding: 10px 0;
             border-radius: 0;
         }
 
 
-        /* --- Estilos de Alerta para o Campo de Número (Input) --- */
+        /* --- Estilos de Alerta (Amarelo/Vermelho) --- */
         .alert-yellow {
             border: 3px solid #ffc107 !important;
             background-color: #fffbe6;
@@ -98,7 +98,7 @@
             max-width: 500px;
         }
 
-        /* AJUSTE: Título Secundário - Cor e Centralização */
+        /* Título Secundário */
         #allTasksSummary h2 {
             color: #555;
             border-bottom: 2px solid #ccc;
@@ -121,21 +121,19 @@
             border-left: 5px solid;
         }
 
-        /* Alerta Verde (Carga Baixa/Normal <= 15) */
+        /* Classes de Alerta do Resumo */
         .summary-green {
             background-color: #e6ffec;
             border-left-color: #28a745;
             color: #218838;
         }
 
-        /* Alerta Amarelo (Carga Alta > 15) */
         .summary-yellow {
             background-color: #fffbe6;
             border-left-color: #ffc107;
             color: #856404;
         }
 
-        /* Alerta Vermelho (Carga Excessiva > 20) */
         .summary-red {
             background-color: #f8d7da;
             border-left-color: #dc3545;
@@ -180,12 +178,10 @@
     
     <script>
         // --- 1. Configuração do Supabase e Variáveis ---
-        // Seus Dados de Conexão:
         const SUPABASE_URL = 'https://uwngmtgcxatmhsyplddk.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV3bmdtdGdjeGF0bWhzeXBsZGRrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA1NzM3MjMsImV4cCI6MjA3NjE0OTcyM30.kJU3l9QTbJUTjX6kUBuorox9qAfmw6pasN5yRNj7C24';
         const TABLE_NAME = 'daily_tasks'; 
 
-        // Inicializa o cliente Supabase
         const { createClient } = supabase;
         const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
@@ -193,21 +189,18 @@
         const taskDateInput = document.getElementById('taskDate');
         const scheduledTasksList = document.getElementById('scheduledTasksList');
 
-        let scheduledTasks = {}; // Cache local para performance
+        let scheduledTasks = {}; 
 
         // --- Funções de Formato e Alerta ---
 
-        /** Converte data ISO (AAAA-MM-DD) para DD/MM/AAAA. */
         function formatDisplayDate(isoDate) {
             if (!isoDate) return '';
             const parts = isoDate.split('-');
             return `${parts[2]}/${parts[1]}/${parts[0]}`;
         }
 
-        /** Verifica o número no campo de input e aplica as classes de alerta no input. */
         function checkTaskAlert() {
             const numTasks = parseInt(numTasksInput.value);
-
             numTasksInput.classList.remove('alert-yellow', 'alert-red');
 
             if (numTasks > 20) {
@@ -217,7 +210,6 @@
             }
         }
 
-        /** Retorna a classe CSS de alerta (red, yellow, ou green) com base na contagem. */
         function getAlertClass(count) {
             if (count > 20) {
                 return 'summary-red';
@@ -231,7 +223,6 @@
 
         // --- 2. Funções de Comunicação com o Supabase ---
 
-        /** Carrega todas as tarefas agendadas do Supabase. */
         async function loadTasks() {
             const { data, error } = await supabaseClient
                 .from(TABLE_NAME)
@@ -248,13 +239,18 @@
             });
         }
 
-        /** Salva (Insere ou Atualiza) a contagem de tarefas. */
         async function saveCount() {
             const selectedDate = taskDateInput.value;
             const numTasks = parseInt(numTasksInput.value);
 
-            if (!selectedDate || isNaN(numTasks) || numTasks < 1) {
-                alert('Por favor, selecione uma data e insira um número válido de tarefas (mínimo 1).');
+            // Valida se a data foi selecionada (importante já que ela não começa preenchida)
+            if (!selectedDate) {
+                alert('Por favor, selecione uma data.');
+                return;
+            }
+
+            if (isNaN(numTasks) || numTasks < 1) {
+                alert('Por favor, insira um número válido de tarefas (mínimo 1).');
                 return;
             }
             
@@ -263,7 +259,6 @@
                 task_count: numTasks
             };
 
-            // Upsert: atualiza se a 'date' já existe, insere se for nova.
             const { error } = await supabaseClient
                 .from(TABLE_NAME)
                 .upsert([taskData], { onConflict: 'date' }); 
@@ -274,7 +269,6 @@
                 return;
             }
 
-            // Atualiza cache e display
             scheduledTasks[selectedDate] = numTasks;
             displayAllScheduledTasks();
             alert(`Contagem de ${numTasks} tarefas para ${formatDisplayDate(selectedDate)} salva com sucesso!`);
@@ -282,10 +276,10 @@
 
         // --- Funções de Exibição ---
 
-        /** Exibe todos os dias agendados. */
         function displayAllScheduledTasks() {
             scheduledTasksList.innerHTML = '';
             
+            // Ordena as datas para exibição
             const dates = Object.keys(scheduledTasks).sort();
             
             if (dates.length === 0) {
@@ -310,18 +304,15 @@
             });
         }
 
-        // --- 3. Inicialização e Eventos ---
+        // --- 3. Inicialização e Eventos (Corrigido para data vazia) ---
 
         async function initializeApp() {
             await loadTasks(); // Carrega os dados do Supabase
 
-            // Define a data atual como padrão
-            const initialDate = new Date().toISOString().split('T')[0];
-            taskDateInput.value = initialDate;
+            // CORREÇÃO: Removemos a atribuição da data atual. O input começa vazio.
             
-            // Carrega a contagem salva para a data atual (ou 1 se não houver)
-            const savedCount = scheduledTasks[initialDate] || 1;
-            numTasksInput.value = savedCount;
+            // Define o número de tarefas padrão para 1, já que não há data selecionada
+            numTasksInput.value = 1;
             
             checkTaskAlert(); 
             displayAllScheduledTasks(); 
@@ -331,7 +322,8 @@
         taskDateInput.addEventListener('change', function() {
             const selectedDate = taskDateInput.value;
             
-            // Carrega a contagem salva do cache
+            // Carrega a contagem salva do cache para a nova data (ou 1 se não houver)
+            // Se a data for vazia, ele usará 1.
             const savedCount = scheduledTasks[selectedDate] || 1; 
             numTasksInput.value = savedCount;
             
