@@ -6,7 +6,7 @@
     <title>Planejador de Capacidade Diária</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        /* ... Seu CSS (Omitido para brevidade, mantenha o original) ... */
+        /* --- Seu CSS de Estilização --- */
         body {
             font-family: Arial, sans-serif;
             background-color: #f4f7f8;
@@ -129,7 +129,7 @@
         
         const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-        // --- 2. Variáveis de Elementos HTML e Estado (Declaradas, preenchidas no DOMContentLoaded) ---
+        // --- 2. Variáveis de Elementos HTML e Estado ---
         let numTasksInput;
         let taskDateInput;
         let scheduledTasksList;
@@ -162,7 +162,7 @@
 
             if (error) {
                 console.error('Erro ao salvar no Supabase:', error);
-                // ESTE ERRO PODE SER O 403 (RLS INSERT FALTANDO)
+                // ESTE É O PONTO MAIS PROVÁVEL DE FALHA DEVIDO AO RLS
                 return false;
             }
             return true;
@@ -194,10 +194,10 @@
             }
         }
         
-        window.deleteTaskCount = deleteTaskCount; // Torna acessível pelo HTML gerado
+        window.deleteTaskCount = deleteTaskCount; 
 
         // ----------------------------------------------------------------------
-        // --- 4. FUNÇÕES DE LÓGICA (Mantidas do seu código local) ---
+        // --- 4. FUNÇÕES DE LÓGICA (Chamadas no onclick/oninput) ---
         // ----------------------------------------------------------------------
         
         function formatDisplayDate(isoDate) {
@@ -207,6 +207,8 @@
         }
 
         function checkTaskAlert() {
+            // Garante que numTasksInput existe antes de usar
+            if (!numTasksInput) return;
             const numTasks = parseInt(numTasksInput.value);
             numTasksInput.classList.remove('alert-yellow', 'alert-red');
 
@@ -229,6 +231,8 @@
         }
 
         function displayAllScheduledTasks() {
+             // Garante que scheduledTasksList existe antes de usar
+            if (!scheduledTasksList) return;
             scheduledTasksList.innerHTML = '';
             
             const dates = Object.keys(scheduledTasks).sort();
@@ -259,6 +263,9 @@
         }
 
         async function saveCount() {
+            // Garante que os inputs existem antes de usar
+             if (!taskDateInput || !numTasksInput) return;
+
             const selectedDate = taskDateInput.value;
             const numTasks = parseInt(numTasksInput.value);
 
@@ -274,12 +281,12 @@
                 displayAllScheduledTasks();
                 alert(`Contagem de ${numTasks} tarefas para ${formatDisplayDate(selectedDate)} salva com sucesso no banco de dados!`);
             } else {
-                 alert('Falha ao salvar. Verifique o Console (F12) para erros de permissão de rede (403 Forbidden).');
+                 alert('Falha ao salvar. Verifique o Console (F12) por erros de permissão 403 (RLS).');
             }
         }
         
         // ----------------------------------------------------------------------
-        // --- 5. INICIALIZAÇÃO DEFINITIVA (Garantida pelo DEFER) ---
+        // --- 5. INICIALIZAÇÃO DEFINITIVA (DOMContentLoaded) ---
         // ----------------------------------------------------------------------
         document.addEventListener('DOMContentLoaded', async () => {
              // 1. ATRIBUIÇÃO DE ELEMENTOS (Ocorre APÓS o DOM estar pronto)
@@ -290,7 +297,7 @@
             // 2. Carrega os dados do Supabase
             await loadTasksFromDB(); 
             
-            // 3. Define o estado inicial da interface (similar ao seu window.onload)
+            // 3. Define o estado inicial da interface
             const initialDate = new Date().toISOString().split('T')[0];
             taskDateInput.value = initialDate;
             
@@ -310,9 +317,6 @@
                 numTasksInput.value = savedCount;
                 checkTaskAlert();
             });
-            // NOTA: O oninput="checkTaskAlert()" e onclick="saveCount()" no HTML
-            // agora funcionarão porque o script DEFER garante que todas essas funções
-            // globais já existem quando os elementos são lidos.
         });
     </script>
 </head>
