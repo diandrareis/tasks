@@ -6,7 +6,7 @@
     <title>Planejador de Capacidade Diária</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        /* --- CSS de Estilização (Seu código original) --- */
+        /* --- CSS de Estilização Completo (Seu código original) --- */
         body {
             font-family: Arial, sans-serif;
             background-color: #f4f7f8;
@@ -120,84 +120,58 @@
         }
         .delete-btn:hover { color: #a52834; }
     </style>
-</head>
-<body>
-
-    <div class="container">
-        <h1>Contador de Capacidade Diária</h1>
-
-        <div class="form-group">
-            <label for="taskDate">Selecione a Data:</label>
-            <input type="date" id="taskDate" required>
-        </div>
-
-        <div class="form-group">
-            <label for="numTasks">Quantas tarefas (Total) você planeja para este dia?</label>
-            <input type="number" id="numTasks" min="1" value="1" required>
-        </div>
-
-        <button id="saveCountBtn">Salvar Contagem Diária</button>
-    </div>
     
-    <div id="allTasksSummary">
-        <h2>Dias Agendados</h2>
-        <div id="scheduledTasksList">
-            </div>
-    </div>
-
-    <script>
-        // --- 1. CONFIGURAÇÃO (Variáveis e Cliente Supabase) ---
+    <script defer>
+        // --- 1. CONFIGURAÇÃO E CLIENTE SUPABASE ---
         const SUPABASE_URL = 'https://uwngmtgcxatmhsyplddk.supabase.co'; 
+        // Esta chave é pública (ANON KEY) e é segura para uso no frontend.
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV3bmdtdGdjeGF0bWhzeXBsZGRrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA1NzM3MjMsImV4cCI6MjA3NjE0OTcyM30.kJU3l9QTbJUTjX6kUBuorox9qAfmw6pasN5yRNj7C24'; 
         const TABLE_NAME = 'daily_tasks'; 
         
         // Inicializa o cliente Supabase.
         const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-        // --- 2. Variáveis de Elementos HTML e Estado (Inicializadas dentro do DOMContentLoaded) ---
+        // --- 2. Variáveis de Elementos HTML e Estado (Serão preenchidas no DOMContentLoaded) ---
         let numTasksInput;
         let taskDateInput;
         let scheduledTasksList;
-        let saveCountBtn; // Novo elemento
         let scheduledTasks = {};
         
         // ----------------------------------------------------------------------
-        // --- 3. FUNÇÕES (A Lógica não muda, mas não são mais globais no HTML) ---
+        // --- 3. FUNÇÕES SUPABASE (Substituindo loadTasks e saveTasks) ---
         // ----------------------------------------------------------------------
-        
-        function checkTaskAlert() {
-            const numTasks = parseInt(numTasksInput.value);
-            numTasksInput.classList.remove('alert-yellow', 'alert-red');
 
-            if (numTasks > 20) {
-                numTasksInput.classList.add('alert-red');
-            } else if (numTasks > 15) {
-                numTasksInput.classList.add('alert-yellow');
-            }
-        }
-        
-        async function saveCount() {
-            // Esta função só é chamada após a inicialização, então os inputs existem.
-            const selectedDate = taskDateInput.value;
-            const numTasks = parseInt(numTasksInput.value);
+        async function loadTasksFromDB() {
+            // Equivalente ao loadTasks()
+            const { data, error } = await supabase
+                .from(TABLE_NAME)
+                .select('date, task_count');
 
-            if (isNaN(numTasks) || numTasks < 1 || !selectedDate) {
-                alert('Por favor, selecione uma data e insira um número válido de tarefas.');
+            if (error) {
+                console.error('Erro ao carregar tarefas do Supabase:', error);
                 return;
             }
-            
-            const success = await saveTaskCountToDB(selectedDate, numTasks); 
 
-            if (success) {
-                scheduledTasks[selectedDate] = numTasks;
-                displayAllScheduledTasks();
-                alert(`Contagem de ${numTasks} tarefas para ${formatDisplayDate(selectedDate)} salva com sucesso no banco de dados!`);
-            } else {
-                 alert('Falha ao salvar. Verifique o Console (F12) para erros de conexão.');
+            // Mapeia o array de objetos do banco para o objeto {date: count}
+            scheduledTasks = data.reduce((acc, row) => {
+                acc[row.date] = row.task_count;
+                return acc;
+            }, {});
+        }
+
+        async function saveTaskCountToDB(date, count) {
+             // Equivalente ao saveTasks()
+            const { error } = await supabase
+                .from(TABLE_NAME)
+                .upsert({ date: date, task_count: count }, { onConflict: 'date' }); 
+
+            if (error) {
+                console.error('Erro ao salvar no Supabase:', error);
+                return false;
             }
+            return true;
         }
         
-        // Função necessária para o botão de remoção na lista de agendamentos
         async function deleteTaskCount(date) {
             if (!confirm(`Tem certeza que deseja remover o agendamento para ${formatDisplayDate(date)}?`)) {
                 return;
@@ -224,50 +198,30 @@
             }
         }
         
-        // **********************************************
-        // É CRUCIAL que o deleteTaskCount seja global
-        // para que o HTML gerado por displayAllScheduledTasks()
-        // (que usa onclick="deleteTaskCount(...)") consiga encontrá-lo.
-        window.deleteTaskCount = deleteTaskCount; 
-        // **********************************************
+        // Torna a função de exclusão global para o onclick no HTML gerado
+        window.deleteTaskCount = deleteTaskCount;
 
-
-        // --- 4. FUNÇÕES DE BANCO DE DADOS E AUXILIARES (Lógica) ---
-
-        async function loadTasksFromDB() {
-            const { data, error } = await supabase
-                .from(TABLE_NAME)
-                .select('date, task_count');
-
-            if (error) {
-                console.error('Erro ao carregar tarefas do Supabase:', error);
-                return;
-            }
-
-            scheduledTasks = data.reduce((acc, row) => {
-                acc[row.date] = row.task_count;
-                return acc;
-            }, {});
-        }
-
-        async function saveTaskCountToDB(date, count) {
-            const { error } = await supabase
-                .from(TABLE_NAME)
-                .upsert({ date: date, task_count: count }, { onConflict: 'date' }); 
-
-            if (error) {
-                console.error('Erro ao salvar no Supabase:', error);
-                return false;
-            }
-            return true;
-        }
-
+        // ----------------------------------------------------------------------
+        // --- 4. FUNÇÕES DE LÓGICA (Mantidas do seu código local) ---
+        // ----------------------------------------------------------------------
+        
         function formatDisplayDate(isoDate) {
             if (!isoDate) return '';
             const parts = isoDate.split('-');
             return `${parts[2]}/${parts[1]}/${parts[0]}`;
         }
 
+        function checkTaskAlert() {
+            const numTasks = parseInt(numTasksInput.value);
+            numTasksInput.classList.remove('alert-yellow', 'alert-red');
+
+            if (numTasks > 20) {
+                numTasksInput.classList.add('alert-red');
+            } else if (numTasks > 15) {
+                numTasksInput.classList.add('alert-yellow');
+            }
+        }
+        
         function getAlertClass(count) {
             if (count > 20) {
                 return 'summary-red';
@@ -309,24 +263,44 @@
             });
         }
 
+
+        async function saveCount() {
+            // A função é declarada como ASYNC para esperar o saveTaskCountToDB
+            const selectedDate = taskDateInput.value;
+            const numTasks = parseInt(numTasksInput.value);
+
+            if (isNaN(numTasks) || numTasks < 1 || !selectedDate) {
+                alert('Por favor, selecione uma data e insira um número válido de tarefas.');
+                return;
+            }
+            
+            const success = await saveTaskCountToDB(selectedDate, numTasks); 
+
+            if (success) {
+                // 1. Atualiza o estado local APÓS o sucesso no banco
+                scheduledTasks[selectedDate] = numTasks;
+
+                // 2. Atualiza o display
+                displayAllScheduledTasks();
+                alert(`Contagem de ${numTasks} tarefas para ${formatDisplayDate(selectedDate)} salva com sucesso no banco de dados!`);
+            } else {
+                 alert('Falha ao salvar. Verifique o Console (F12) para erros de conexão (401, 403, 404).');
+            }
+        }
+
         // ----------------------------------------------------------------------
-        // --- 5. INICIALIZAÇÃO DEFINITIVA (DOMContentLoaded) ---
+        // --- 5. INICIALIZAÇÃO DEFINITIVA (DOMContentLoaded, agora garantido pelo DEFER) ---
         // ----------------------------------------------------------------------
         document.addEventListener('DOMContentLoaded', async () => {
-             // 1. ATRIBUIÇÃO DE ELEMENTOS: Ocorre SOMENTE após o DOM estar pronto
+             // 1. ATRIBUIÇÃO DE ELEMENTOS
             numTasksInput = document.getElementById('numTasks');
             taskDateInput = document.getElementById('taskDate');
             scheduledTasksList = document.getElementById('scheduledTasksList');
-            saveCountBtn = document.getElementById('saveCountBtn');
-
-            // 2. ANEXAR EVENTOS: Usa Event Listeners em vez de onclick/oninput no HTML
-            numTasksInput.addEventListener('input', checkTaskAlert);
-            saveCountBtn.addEventListener('click', saveCount);
             
-            // 3. Carrega os dados do Supabase
+            // 2. Carrega os dados do Supabase
             await loadTasksFromDB(); 
             
-            // 4. Define a data e o valor inicial do input
+            // 3. Define a data e o valor inicial do input
             const initialDate = new Date().toISOString().split('T')[0];
             taskDateInput.value = initialDate;
             
@@ -336,18 +310,47 @@
                 numTasksInput.value = 1; 
             }
             
-            // 5. Atualiza o display inicial
+            // 4. Atualiza o display
             checkTaskAlert(); 
             displayAllScheduledTasks();
             
-            // 6. Configura o evento para atualizar o input ao trocar a data
+            // 5. Configura o evento para atualizar o input ao trocar a data
             taskDateInput.addEventListener('change', function() {
                 const selectedDate = taskDateInput.value;
                 const savedCount = scheduledTasks[selectedDate] || 1; 
                 numTasksInput.value = savedCount;
                 checkTaskAlert();
             });
+            
+            // NOTA: O oninput="checkTaskAlert()" no HTML e onclick="saveCount()"
+            // são usados e agora são garantidos por serem funções globais (sem const/let)
+            // e pelo script ter o atributo DEFER, garantindo a inicialização.
         });
     </script>
+</head>
+<body>
+
+    <div class="container">
+        <h1>🔢 Contador de Capacidade Diária</h1>
+
+        <div class="form-group">
+            <label for="taskDate">Selecione a Data:</label>
+            <input type="date" id="taskDate" required>
+        </div>
+
+        <div class="form-group">
+            <label for="numTasks">Quantas tarefas (Total) você planeja para este dia?</label>
+            <input type="number" id="numTasks" min="1" value="1" oninput="checkTaskAlert()" required>
+        </div>
+
+        <button onclick="saveCount()">Salvar Contagem Diária</button>
+    </div>
+    
+    <div id="allTasksSummary">
+        <h2>📅 Dias Agendados</h2>
+        <div id="scheduledTasksList">
+            </div>
+    </div>
+
 </body>
 </html>
