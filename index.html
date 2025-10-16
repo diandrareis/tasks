@@ -49,7 +49,6 @@
 
         /* Estilos base para inputs */
         input[type="date"], input[type="number"], button {
-            width: 100%;
             padding: 10px;
             border: 1px solid #ccc;
             border-radius: 5px;
@@ -60,11 +59,43 @@
         
         /* Input de data sem borda inferior, conforme a imagem. */
         #taskDate {
+            width: 100%; /* Fixa a largura do input de data */
             border: none;
             border-bottom: 1px solid #ccc;
             padding: 10px 0;
             border-radius: 0;
         }
+        
+        /* --- NOVO CSS: Container para o Contador --- */
+        .counter-controls {
+            display: flex;
+            gap: 10px; /* Espaçamento entre o botão e o input */
+            align-items: center;
+        }
+
+        .counter-controls button {
+            width: 40px; 
+            height: 40px; 
+            padding: 0;
+            margin: 0;
+            flex-shrink: 0; /* Não deixa o botão encolher */
+            background-color: #f0f0f0;
+            color: #333;
+            font-size: 1.5em;
+            font-weight: bold;
+            border: 1px solid #ccc;
+        }
+
+        .counter-controls button:hover {
+            background-color: #e0e0e0;
+        }
+
+        #numTasks {
+            flex-grow: 1; /* O input ocupa o espaço restante */
+            text-align: center;
+            width: auto; /* Deixa o flexbox controlar a largura */
+        }
+        /* ------------------------------------------- */
 
 
         /* --- Estilos de Alerta (Amarelo/Vermelho) --- */
@@ -78,17 +109,18 @@
             background-color: #f8d7da;
         }
         
-        button {
+        button#saveButton {
+            width: 100%;
             background-color: #007bff;
             color: white;
             font-weight: bold;
             cursor: pointer;
             transition: background-color 0.3s ease;
-            margin-top: 10px;
+            margin-top: 20px;
             border: none;
         }
 
-        button:hover {
+        button#saveButton:hover {
             background-color: #0056b3;
         }
         
@@ -161,11 +193,15 @@
         </div>
 
         <div class="form-group">
-            <label for="numTasks">Quantas tarefas (Total) você planeja para este dia?</label>
-            <input type="number" id="numTasks" min="1" value="1" oninput="checkTaskAlert()" required>
+            <label>Quantas tarefas (Total) você planeja para este dia?</label>
+            <div class="counter-controls">
+                <button id="decrementBtn">-</button>
+                <input type="number" id="numTasks" min="1" value="1" oninput="checkTaskAlert()" required>
+                <button id="incrementBtn">+</button>
+            </div>
         </div>
 
-        <button onclick="saveCount()">Salvar Contagem Diária</button>
+        <button id="saveButton" onclick="saveCount()">Salvar Contagem Diária</button>
     </div>
     
     <div id="allTasksSummary">
@@ -188,10 +224,12 @@
         const numTasksInput = document.getElementById('numTasks');
         const taskDateInput = document.getElementById('taskDate');
         const scheduledTasksList = document.getElementById('scheduledTasksList');
+        const incrementBtn = document.getElementById('incrementBtn');
+        const decrementBtn = document.getElementById('decrementBtn');
 
         let scheduledTasks = {}; 
 
-        // --- Funções de Formato e Alerta ---
+        // --- Funções de Formato e Alerta (Inalteradas) ---
 
         function formatDisplayDate(isoDate) {
             if (!isoDate) return '';
@@ -243,15 +281,14 @@
             const selectedDate = taskDateInput.value;
             const numTasks = parseInt(numTasksInput.value);
 
-            // Valida se a data foi selecionada (importante já que ela não começa preenchida)
             if (!selectedDate) {
                 alert('Por favor, selecione uma data.');
-                return;
+                return false; // Retorna falso para indicar falha
             }
 
             if (isNaN(numTasks) || numTasks < 1) {
                 alert('Por favor, insira um número válido de tarefas (mínimo 1).');
-                return;
+                return false;
             }
             
             const taskData = {
@@ -266,20 +303,60 @@
             if (error) {
                 console.error('Erro ao salvar no Supabase:', error.message);
                 alert('Erro ao salvar. Verifique se a tabela foi criada e as permissões RLS no Supabase.');
-                return;
+                return false;
             }
 
+            // Atualiza o cache e o display após o salvamento bem-sucedido
             scheduledTasks[selectedDate] = numTasks;
             displayAllScheduledTasks();
-            alert(`Contagem de ${numTasks} tarefas para ${formatDisplayDate(selectedDate)} salva com sucesso!`);
+            return true; // Retorna verdadeiro para indicar sucesso
         }
 
-        // --- Funções de Exibição ---
+        // --- NOVO: Funções de Incremento/Decremento ---
+
+        async function incrementTask() {
+            let currentCount = parseInt(numTasksInput.value);
+            // Incrementa
+            currentCount++;
+            numTasksInput.value = currentCount;
+            checkTaskAlert();
+            
+            // Salva no Supabase logo após a alteração (se a data estiver selecionada)
+            if (taskDateInput.value) {
+                const success = await saveCount();
+                if (success) {
+                    console.log(`Contagem incrementada e salva para ${formatDisplayDate(taskDateInput.value)}`);
+                }
+            } else {
+                console.log('Contagem incrementada, mas não salva: nenhuma data selecionada.');
+            }
+        }
+
+        async function decrementTask() {
+            let currentCount = parseInt(numTasksInput.value);
+            // Decrementa, garantindo que o mínimo seja 1
+            if (currentCount > 1) {
+                currentCount--;
+                numTasksInput.value = currentCount;
+                checkTaskAlert();
+                
+                // Salva no Supabase logo após a alteração (se a data estiver selecionada)
+                if (taskDateInput.value) {
+                    const success = await saveCount();
+                    if (success) {
+                        console.log(`Contagem decrementada e salva para ${formatDisplayDate(taskDateInput.value)}`);
+                    }
+                } else {
+                    console.log('Contagem decrementada, mas não salva: nenhuma data selecionada.');
+                }
+            }
+        }
+        
+        // --- Funções de Exibição (Inalteradas) ---
 
         function displayAllScheduledTasks() {
             scheduledTasksList.innerHTML = '';
             
-            // Ordena as datas para exibição
             const dates = Object.keys(scheduledTasks).sort();
             
             if (dates.length === 0) {
@@ -304,36 +381,32 @@
             });
         }
 
-        // --- 3. Inicialização e Eventos (Corrigido para data vazia) ---
+        // --- 3. Inicialização e Eventos ---
 
         async function initializeApp() {
-            await loadTasks(); // Carrega os dados do Supabase
-
-            // CORREÇÃO: Removemos a atribuição da data atual. O input começa vazio.
+            await loadTasks(); 
             
-            // Define o número de tarefas padrão para 1, já que não há data selecionada
             numTasksInput.value = 1;
-            
             checkTaskAlert(); 
             displayAllScheduledTasks(); 
         }
 
-        /** Evento: Atualiza o input ao trocar a data. */
+        /** Evento: Carrega o valor salvo do dia ao trocar a data. */
         taskDateInput.addEventListener('change', function() {
             const selectedDate = taskDateInput.value;
             
-            // Carrega a contagem salva do cache para a nova data (ou 1 se não houver)
-            // Se a data for vazia, ele usará 1.
             const savedCount = scheduledTasks[selectedDate] || 1; 
             numTasksInput.value = savedCount;
             
             checkTaskAlert();
         });
+        
+        // NOVO: Adiciona os listeners de clique aos botões de contador
+        incrementBtn.addEventListener('click', incrementTask);
+        decrementBtn.addEventListener('click', decrementTask);
 
         window.onload = initializeApp; 
     </script>
     
 </body>
 </html>
-
-
