@@ -6,7 +6,7 @@
     <title>Planejador de Capacidade Diária</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        /* --- CSS de Estilização Completo (para visual conforme a imagem) --- */
+        /* --- CSS de Estilização Completo (Baseado no seu código) --- */
         body {
             font-family: Arial, sans-serif;
             background-color: #f4f7f8;
@@ -33,6 +33,9 @@
             text-align: center;
             margin-bottom: 25px;
         }
+        
+        /* Ícone no título H1 */
+        h1:before { content: '🔢 '; }
 
         .form-group {
             margin-bottom: 25px;
@@ -54,7 +57,7 @@
             transition: border 0.3s, background-color 0.3s;
         }
 
-        /* --- Estilos de Alerta para o Campo de Número (Input) --- */
+        /* Estilos de Alerta para o Campo de Número (Input) */
         .alert-yellow { border: 3px solid #ffc107 !important; background-color: #fffbe6; }
         .alert-red { border: 3px solid #dc3545 !important; background-color: #f8d7da; }
         
@@ -69,7 +72,7 @@
 
         button:hover { background-color: #0056b3; }
         
-        /* --- Estilos para o Histórico/Resumo Geral --- */
+        /* Estilos para o Histórico/Resumo Geral */
         #allTasksSummary {
             width: 100%;
             max-width: 500px;
@@ -82,10 +85,9 @@
             margin-bottom: 15px;
             text-align: center;
         }
-        /* Icone de calendário conforme a imagem */
-        #allTasksSummary h2:before {
-            content: '📅 ';
-        }
+        
+        /* Ícone de calendário no título H2 */
+        #allTasksSummary h2:before { content: '📅 '; }
 
         .summary-item {
             display: flex;
@@ -103,13 +105,13 @@
         .summary-green { background-color: #e6ffec; border-left-color: #28a745; color: #218838; }
         /* Alerta Amarelo (Carga Alta > 15) */
         .summary-yellow { background-color: #fffbe6; border-left-color: #ffc107; color: #856404; }
-        /* Alerta Vermelho (Carga Excessiva >= 20) */
+        /* Alerta Vermelho (Carga Excessiva > 20) */
         .summary-red { background-color: #f8d7da; border-left-color: #dc3545; color: #721c24; }
 
         .summary-item .date { flex-grow: 1; }
         .summary-item .count { font-size: 1.2em; padding: 0 10px; }
-        
-        /* Botão de Remover */
+
+        /* Botão de Remover (A ser adicionado na lista, como no código anterior) */
         .delete-btn {
             background: none;
             border: none;
@@ -125,7 +127,7 @@
 <body>
 
     <div class="container">
-        <h1><span style="font-size: 1.2em;">📅</span> Contador de Capacidade Diária</h1>
+        <h1>Contador de Capacidade Diária</h1>
 
         <div class="form-group">
             <label for="taskDate">Selecione a Data:</label>
@@ -154,59 +156,56 @@
         
         const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-        // --- 2. Variáveis de Elementos HTML (Declaradas como 'let' para atribuição posterior) ---
+        // --- 2. Variáveis de Elementos HTML (Declaradas para inicialização posterior) ---
         let numTasksInput;
         let taskDateInput;
         let scheduledTasksList;
         let scheduledTasks = {};
         
         // ----------------------------------------------------------------------
-        // --- 3. FUNÇÕES GLOBAIS (Chamadas por onclick/oninput no HTML) ---
+        // --- 3. FUNÇÕES DE BANCO DE DADOS (Substituem localStorage) ---
         // ----------------------------------------------------------------------
         
-        // Estas funções agora podem ser chamadas globalmente, pois as variáveis 
-        // serão inicializadas antes da primeira chamada de usuário (via DOMContentLoaded).
-        function checkTaskAlert() {
-            const numTasks = parseInt(numTasksInput.value);
-            numTasksInput.classList.remove('alert-yellow', 'alert-red');
+        /**
+         * Carrega as tarefas do Supabase (Substitui loadTasks() local)
+         */
+        async function loadTasksFromDB() {
+            const { data, error } = await supabase
+                .from(TABLE_NAME)
+                .select('date, task_count'); // Seleciona apenas o necessário
 
-            if (numTasks >= 20) {
-                numTasksInput.classList.add('alert-red');
-            } else if (numTasks > 15) {
-                numTasksInput.classList.add('alert-yellow');
-            }
-        }
-        
-        async function saveCount() {
-            // Verifica se o DOM foi inicializado antes de prosseguir
-            if (!taskDateInput) {
-                alert("Erro de inicialização. Por favor, tente um Hard Refresh (Ctrl+Shift+R).");
+            if (error) {
+                console.error('Erro ao carregar tarefas do Supabase:', error);
                 return;
             }
             
-            const selectedDate = taskDateInput.value;
-            const numTasks = parseInt(numTasksInput.value);
-
-            if (isNaN(numTasks) || numTasks < 1 || !selectedDate) {
-                alert('Por favor, selecione uma data e insira um número válido de tarefas.');
-                return;
-            }
-            
-            const success = await saveTaskCountToDB(selectedDate, numTasks); 
-
-            if (success) {
-                scheduledTasks[selectedDate] = numTasks;
-                displayAllScheduledTasks();
-                alert(`Contagem de ${numTasks} tarefas para ${formatDisplayDate(selectedDate)} salva com sucesso no banco de dados!`);
-            } else {
-                 alert('Falha ao salvar. Verifique o console (F12) para erros de rede (chave inválida).');
-            }
+            // Mapeia o array de dados para o objeto `scheduledTasks`
+            scheduledTasks = data.reduce((acc, row) => {
+                acc[row.date] = row.task_count;
+                return acc;
+            }, {});
         }
-        
+
+        /**
+         * Salva/Atualiza a contagem no Supabase (Substitui saveTasks() local)
+         */
+        async function saveTaskCountToDB(date, count) {
+            // Usa upsert para INSERIR um novo dia ou ATUALIZAR um existente, usando 'date' como chave única.
+            const { error } = await supabase
+                .from(TABLE_NAME)
+                .upsert({ date: date, task_count: count }, { onConflict: 'date' }); 
+
+            if (error) {
+                console.error('Erro ao salvar no Supabase:', error);
+                return false;
+            }
+            return true;
+        }
+
+        /**
+         * Remove a contagem do Supabase
+         */
         async function deleteTaskCount(date) {
-            // Verifica se o DOM foi inicializado
-             if (!taskDateInput) return;
-            
             if (!confirm(`Tem certeza que deseja remover o agendamento para ${formatDisplayDate(date)}?`)) {
                 return;
             }
@@ -234,37 +233,56 @@
 
 
         // ----------------------------------------------------------------------
-        // --- 4. FUNÇÕES AUXILIARES (Lógica de Banco de Dados e Exibição) ---
+        // --- 4. FUNÇÕES GLOBAIS (Chamadas por HTML) ---
         // ----------------------------------------------------------------------
 
-        async function loadTasks() {
-            const { data, error } = await supabase
-                .from(TABLE_NAME)
-                .select('date, task_count');
+        /**
+         * Verifica o número no campo de input e aplica as classes de alerta no input.
+         */
+        function checkTaskAlert() {
+            const numTasks = parseInt(numTasksInput.value);
 
-            if (error) {
-                console.error('Erro ao carregar tarefas do Supabase:', error);
+            numTasksInput.classList.remove('alert-yellow', 'alert-red');
+
+            if (numTasks > 20) {
+                numTasksInput.classList.add('alert-red');
+            } else if (numTasks > 15) {
+                numTasksInput.classList.add('alert-yellow');
+            }
+        }
+        
+        /**
+         * Salva a contagem (Agora assíncrona para o Supabase)
+         */
+        async function saveCount() {
+            // Verifica se os elementos foram inicializados
+            if (!taskDateInput) { return; }
+            
+            const selectedDate = taskDateInput.value;
+            const numTasks = parseInt(numTasksInput.value);
+
+            if (isNaN(numTasks) || numTasks < 1 || !selectedDate) {
+                alert('Por favor, selecione uma data e insira um número válido de tarefas.');
                 return;
             }
+            
+            // Chama a função de banco de dados assíncrona
+            const success = await saveTaskCountToDB(selectedDate, numTasks); 
 
-            scheduledTasks = data.reduce((acc, row) => {
-                acc[row.date] = row.task_count;
-                return acc;
-            }, {});
-        }
-
-        async function saveTaskCountToDB(date, count) {
-            const { error } = await supabase
-                .from(TABLE_NAME)
-                .upsert({ date: date, task_count: count }, { onConflict: 'date' }); 
-
-            if (error) {
-                console.error('Erro ao salvar no Supabase:', error);
-                return false;
+            if (success) {
+                scheduledTasks[selectedDate] = numTasks;
+                displayAllScheduledTasks();
+                alert(`Contagem de ${numTasks} tarefas para ${formatDisplayDate(selectedDate)} salva com sucesso no banco de dados!`);
+            } else {
+                 alert('Falha ao salvar. Verifique o console (F12) para erros de rede/permissão.');
             }
-            return true;
         }
 
+
+        // ----------------------------------------------------------------------
+        // --- 5. FUNÇÕES AUXILIARES DE EXIBIÇÃO E FORMATO ---
+        // ----------------------------------------------------------------------
+        
         function formatDisplayDate(isoDate) {
             if (!isoDate) return '';
             const parts = isoDate.split('-');
@@ -272,7 +290,7 @@
         }
 
         function getAlertClass(count) {
-            if (count >= 20) {
+            if (count > 20) {
                 return 'summary-red';
             } else if (count > 15) {
                 return 'summary-yellow';
@@ -282,6 +300,9 @@
             return '';
         }
 
+        /**
+         * Exibe todos os dias agendados na seção de resumo geral, ordenados por data.
+         */
         function displayAllScheduledTasks() {
             scheduledTasksList.innerHTML = '';
             
@@ -311,9 +332,9 @@
                 }
             });
         }
-
+        
         // ----------------------------------------------------------------------
-        // --- 5. INICIALIZAÇÃO DEFINITIVA (Usa DOMContentLoaded) ---
+        // --- 6. INICIALIZAÇÃO DEFINITIVA (DOM READY) ---
         // ----------------------------------------------------------------------
         document.addEventListener('DOMContentLoaded', async () => {
              // ATRIBUIÇÃO: Resolve o "Cannot access before initialization"
@@ -321,8 +342,10 @@
             taskDateInput = document.getElementById('taskDate');
             scheduledTasksList = document.getElementById('scheduledTasksList');
             
-            await loadTasks(); 
+            // 1. Carrega os dados do Supabase
+            await loadTasksFromDB(); 
             
+            // 2. Define a data e o valor inicial do input
             const initialDate = new Date().toISOString().split('T')[0];
             taskDateInput.value = initialDate;
             
@@ -332,10 +355,11 @@
                 numTasksInput.value = 1; 
             }
             
+            // 3. Atualiza o display
             checkTaskAlert(); 
             displayAllScheduledTasks();
             
-            // Evento para atualizar o input quando a data muda
+            // 4. Configura o evento para atualizar o input ao trocar a data
             taskDateInput.addEventListener('change', function() {
                 const selectedDate = taskDateInput.value;
                 const savedCount = scheduledTasks[selectedDate] || 1; 
