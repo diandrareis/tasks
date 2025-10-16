@@ -55,7 +55,7 @@
             box-sizing: border-box;
             transition: border 0.3s, background-color 0.3s;
             font-size: 1em;
-            width: 100%; /* Garantir que os novos inputs de nome/sobrenome também ocupem 100% */
+            width: 100%;
         }
         
         /* Input de data sem borda inferior, conforme a imagem. */
@@ -268,6 +268,7 @@
     
     <script>
         // --- 1. Configuração do Supabase e Variáveis ---
+        // ATENÇÃO: Se você mudar de projeto Supabase, troque estas duas chaves!
         const SUPABASE_URL = 'https://uwngmtgcxatmhsyplddk.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV3bmdtdGdjeGF0bWhzeXBsZGRrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA1NzM3MjMsImV4cCI6MjA3NjE0OTcyM30.kJU3l9QTbJUTjX6kUBuorox9qAfmw6pasN5yRNj7C24';
         const TABLE_NAME = 'daily_tasks'; 
@@ -275,18 +276,18 @@
         const { createClient } = supabase;
         const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-        // Elementos de Autenticação (Novos e Existentes)
+        // Elementos de Autenticação
         const appContainer = document.getElementById('appContainer');
         const authForm = document.getElementById('authForm');
         const emailInput = document.getElementById('email');
         const passwordInput = document.getElementById('password');
-        const nameInput = document.getElementById('name'); // NOVO
-        const surnameInput = document.getElementById('surname'); // NOVO
-        const nameFields = document.getElementById('nameFields'); // NOVO
+        const nameInput = document.getElementById('name');
+        const surnameInput = document.getElementById('surname');
+        const nameFields = document.getElementById('nameFields');
         const loginBtn = document.getElementById('loginBtn');
         const signUpBtn = document.getElementById('signUpBtn');
         const toggleSignUpBtn = document.getElementById('toggleSignUpBtn');
-        const welcomeMessage = document.getElementById('welcomeMessage'); // NOVO
+        const welcomeMessage = document.getElementById('welcomeMessage');
 
         // Elementos de Tarefas
         const numTasksInput = document.getElementById('numTasks');
@@ -320,7 +321,7 @@
                 loginBtn.style.display = 'none';
                 signUpBtn.style.display = 'block';
                 toggleSignUpBtn.innerText = 'Voltar para Login';
-                toggleSignUpBtn.style.backgroundColor = '#6c757d';
+                toggleSignUpBtn.style.backgroundColor = '#dc3545'; // Mudei a cor para vermelho para destacar a volta
             } else {
                 nameFields.style.display = 'none';
                 loginBtn.style.display = 'block';
@@ -353,14 +354,13 @@
                     return;
                 }
 
-                // 1. Tenta cadastrar o usuário
+                // 1. Tenta cadastrar o usuário e salva o nome/sobrenome no user_metadata
                 response = await supabaseClient.auth.signUp({ 
                     email, 
                     password,
-                    // Passa o nome completo como 'data' do usuário
                     options: {
                         data: {
-                            full_name: `${name} ${surname}`
+                            full_name: `${name} ${surname}` // Salva o nome e sobrenome concatenados
                         }
                     }
                 });
@@ -369,12 +369,12 @@
             if (response.error) {
                 alert(`Erro na autenticação: ${response.error.message}`);
             } else {
-                // Cadastro bem-sucedido. O Supabase enviará um email de confirmação.
+                // Se for sign up, instrui o usuário a confirmar e logar
                 if (!isLogin) {
                     alert('Cadastro realizado! Verifique seu email para confirmar e depois faça o login.');
                     showSignUp(); // Volta para a tela de login
                 }
-                // Se for login, o onAuthStateChange fará a transição
+                // Se for login, o onAuthStateChange fará a transição e a persistência
             }
         }
 
@@ -387,15 +387,15 @@
                 currentUserId = null;
                 scheduledTasks = {};
                 toggleView(false, null);
-                alert('Sessão encerrada.');
             }
         }
 
-        // --- Funções de Tarefas (Inalteradas, mas essenciais) ---
+        // --- Funções de Tarefas ---
 
         async function loadTasks() {
             if (!currentUserId) return; 
 
+            // Filtra os dados apenas para o usuário logado (RLS em ação!)
             const { data, error } = await supabaseClient
                 .from(TABLE_NAME)
                 .select('date, task_count')
@@ -446,6 +446,8 @@
             displayAllScheduledTasks();
             return true;
         }
+
+        // --- Funções Auxiliares (Display/Alertas/Contador) ---
 
         function formatDisplayDate(isoDate) {
             if (!isoDate) return '';
@@ -536,12 +538,11 @@
             displayAllScheduledTasks(); 
         }
 
-        /** Evento que observa o estado da autenticação do Supabase. */
+        /** Evento que observa o estado da autenticação (Garanti a persistência da sessão). */
         supabaseClient.auth.onAuthStateChange((event, session) => {
             if (session && session.user) {
-                // USUÁRIO LOGADO
+                // USUÁRIO LOGADO: Pega o nome para personalizar a saudação
                 currentUserId = session.user.id;
-                // Pega o nome completo que salvamos no 'data' do perfil
                 const fullName = session.user.user_metadata.full_name || session.user.email; 
                 toggleView(true, fullName);
             } else {
