@@ -203,7 +203,7 @@
             const numTasks = parseInt(numTasksInput.value);
             numTasksInput.classList.remove('alert-yellow', 'alert-red');
 
-            if (numTasks > 20) {
+            if (numTasks >= 20) {
                 numTasksInput.classList.add('alert-red');
             } else if (numTasks > 15) {
                 numTasksInput.classList.add('alert-yellow');
@@ -211,7 +211,7 @@
         }
 
         function getAlertClass(count) {
-            if (count > 20) {
+            if (count >= 20) {
                 return 'summary-red';
             } else if (count > 15) {
                 return 'summary-yellow';
@@ -335,3 +335,4 @@
     
 </body>
 </html>
+
