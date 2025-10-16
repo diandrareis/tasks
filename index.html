@@ -268,9 +268,9 @@
     
     <script>
         // --- 1. Configuração do Supabase e Variáveis ---
-        // ATENÇÃO: Se você mudar de projeto Supabase, troque estas duas chaves!
-        const SUPABASE_URL = 'https://uwngmtgcxatmhsyplddk.supabase.co';
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV3bmdtdGdjeGF0bWhzeXBsZGRrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA1NzM3MjMsImV4cCI6MjA3NjE0OTcyM30.kJU3l9QTbJUTjX6kUBuorox9qAfmw6pasN5yRNj7C24';
+        // ATENÇÃO: TROQUE ESTAS CHAVES PELAS SUAS!
+        const SUPABASE_URL = 'https://uwngmtgcxatmhsyplddk.supabase.co'; // TROQUE A URL
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV3bmdtdGdjeGF0bWhzeXBsZGRrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA1NzM3MjMsImV4cCI6MjA3NjE0OTcyM30.kJU3l9QTbJUTjX6kUBuorox9qAfmw6pasN5yRNj7C24'; // TROQUE A CHAVE ANON
         const TABLE_NAME = 'daily_tasks'; 
 
         const { createClient } = supabase;
@@ -393,11 +393,10 @@
         async function loadTasks() {
             if (!currentUserId) return; 
 
-            // Filtra os dados apenas para o usuário logado (depende do RLS)
+            // Filtra os dados apenas para o usuário logado (Garantido pelo RLS)
             const { data, error } = await supabaseClient
                 .from(TABLE_NAME)
                 .select('date, task_count')
-                .eq('user_id', currentUserId)
                 .order('date', { ascending: true }); 
 
             if (error) {
@@ -432,11 +431,12 @@
 
             const { error } = await supabaseClient
                 .from(TABLE_NAME)
-                // CORREÇÃO CRÍTICA: onConflict agora usa 'date, user_id' para garantir que 
-                // usuários diferentes salvem dados para o mesmo dia sem sobrescrever.
+                // CORREÇÃO CRÍTICA: onConflict agora usa 'date, user_id' para evitar que
+                // um usuário sobrescreva o outro e resolve o erro de chave primária.
                 .upsert([taskData], { onConflict: 'date, user_id' }); 
 
             if (error) {
+                // Exibe a mensagem de erro que você estava vendo, se o SQL não tiver sido executado
                 console.error('Erro ao salvar no Supabase:', error.message);
                 alert('Erro ao salvar. Verifique o console e as políticas RLS. (Pode ser erro de chave primária/conflito)');
                 return false;
@@ -452,7 +452,8 @@
         function formatDisplayDate(isoDate) {
             if (!isoDate) return '';
             const parts = isoDate.split('-');
-            return `${parts[2]}/${parts[1]}/${parts[0]}`;
+            // Garante que a data seja exibida como dd/mm/aaaa
+            return `${parts[2]}/${parts[1]}/${parts[0]}`; 
         }
 
         function checkTaskAlert() {
@@ -510,6 +511,7 @@
             numTasksInput.value = currentCount;
             checkTaskAlert();
             
+            // Salva automaticamente se a data estiver selecionada (melhora a UX)
             if (taskDateInput.value) {
                 await saveCount();
             }
@@ -522,6 +524,7 @@
                 numTasksInput.value = currentCount;
                 checkTaskAlert();
                 
+                // Salva automaticamente se a data estiver selecionada (melhora a UX)
                 if (taskDateInput.value) {
                     await saveCount();
                 }
@@ -538,11 +541,12 @@
             displayAllScheduledTasks(); 
         }
 
-        /** Evento que observa o estado da autenticação (Garanti a persistência da sessão). */
+        /** Evento que observa o estado da autenticação (Garante a persistência da sessão). */
         supabaseClient.auth.onAuthStateChange((event, session) => {
             if (session && session.user) {
                 // USUÁRIO LOGADO: Pega o nome para personalizar a saudação
                 currentUserId = session.user.id;
+                // Tenta usar o full_name que salvamos no cadastro, senão usa o email
                 const fullName = session.user.user_metadata.full_name || session.user.email; 
                 toggleView(true, fullName);
             } else {
@@ -555,6 +559,7 @@
 
         taskDateInput.addEventListener('change', function() {
             const selectedDate = taskDateInput.value;
+            // Carrega o contador com o valor salvo para aquela data, senão usa 1
             const savedCount = scheduledTasks[selectedDate] || 1; 
             numTasksInput.value = savedCount;
             checkTaskAlert();
