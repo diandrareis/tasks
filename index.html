@@ -6,7 +6,7 @@
     <title>Planejador de Capacidade Diária</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        /* --- CSS de Estilização Completo (Para visual conforme a imagem) --- */
+        /* --- CSS de Estilização (Seu código original) --- */
         body {
             font-family: Arial, sans-serif;
             background-color: #f4f7f8;
@@ -133,10 +133,10 @@
 
         <div class="form-group">
             <label for="numTasks">Quantas tarefas (Total) você planeja para este dia?</label>
-            <input type="number" id="numTasks" min="1" value="1" oninput="checkTaskAlert()" required>
+            <input type="number" id="numTasks" min="1" value="1" required>
         </div>
 
-        <button onclick="saveCount()">Salvar Contagem Diária</button>
+        <button id="saveCountBtn">Salvar Contagem Diária</button>
     </div>
     
     <div id="allTasksSummary">
@@ -147,7 +147,6 @@
 
     <script>
         // --- 1. CONFIGURAÇÃO (Variáveis e Cliente Supabase) ---
-        // Estes devem ser as primeiras coisas a serem carregadas no script.
         const SUPABASE_URL = 'https://uwngmtgcxatmhsyplddk.supabase.co'; 
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV3bmdtdGdjeGF0bWhzeXBsZGRrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA1NzM3MjMsImV4cCI6MjA3NjE0OTcyM30.kJU3l9QTbJUTjX6kUBuorox9qAfmw6pasN5yRNj7C24'; 
         const TABLE_NAME = 'daily_tasks'; 
@@ -155,21 +154,18 @@
         // Inicializa o cliente Supabase.
         const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-        // --- 2. Variáveis de Elementos HTML e Estado (Declaradas, preenchidas no DOMContentLoaded) ---
+        // --- 2. Variáveis de Elementos HTML e Estado (Inicializadas dentro do DOMContentLoaded) ---
         let numTasksInput;
         let taskDateInput;
         let scheduledTasksList;
+        let saveCountBtn; // Novo elemento
         let scheduledTasks = {};
         
         // ----------------------------------------------------------------------
-        // --- 3. FUNÇÕES GLOBAIS (Acessíveis pelo HTML: onclick/oninput) ---
+        // --- 3. FUNÇÕES (A Lógica não muda, mas não são mais globais no HTML) ---
         // ----------------------------------------------------------------------
         
-        // Funções para o HTML precisam ser definidas no escopo global.
-        
         function checkTaskAlert() {
-            if (!numTasksInput) return;
-            
             const numTasks = parseInt(numTasksInput.value);
             numTasksInput.classList.remove('alert-yellow', 'alert-red');
 
@@ -181,12 +177,7 @@
         }
         
         async function saveCount() {
-            if (!taskDateInput) { 
-                console.error("Erro: taskDateInput não inicializado.");
-                alert("Erro ao salvar. Por favor, recarregue a página com Ctrl+Shift+R.");
-                return;
-            }
-            
+            // Esta função só é chamada após a inicialização, então os inputs existem.
             const selectedDate = taskDateInput.value;
             const numTasks = parseInt(numTasksInput.value);
 
@@ -206,9 +197,8 @@
             }
         }
         
+        // Função necessária para o botão de remoção na lista de agendamentos
         async function deleteTaskCount(date) {
-            if (!taskDateInput) return;
-            
             if (!confirm(`Tem certeza que deseja remover o agendamento para ${formatDisplayDate(date)}?`)) {
                 return;
             }
@@ -233,11 +223,16 @@
                 checkTaskAlert();
             }
         }
+        
+        // **********************************************
+        // É CRUCIAL que o deleteTaskCount seja global
+        // para que o HTML gerado por displayAllScheduledTasks()
+        // (que usa onclick="deleteTaskCount(...)") consiga encontrá-lo.
+        window.deleteTaskCount = deleteTaskCount; 
+        // **********************************************
 
 
-        // ----------------------------------------------------------------------
         // --- 4. FUNÇÕES DE BANCO DE DADOS E AUXILIARES (Lógica) ---
-        // ----------------------------------------------------------------------
 
         async function loadTasksFromDB() {
             const { data, error } = await supabase
@@ -318,15 +313,20 @@
         // --- 5. INICIALIZAÇÃO DEFINITIVA (DOMContentLoaded) ---
         // ----------------------------------------------------------------------
         document.addEventListener('DOMContentLoaded', async () => {
-             // ATRIBUIÇÃO: Ocorre SOMENTE após o DOM estar pronto
+             // 1. ATRIBUIÇÃO DE ELEMENTOS: Ocorre SOMENTE após o DOM estar pronto
             numTasksInput = document.getElementById('numTasks');
             taskDateInput = document.getElementById('taskDate');
             scheduledTasksList = document.getElementById('scheduledTasksList');
+            saveCountBtn = document.getElementById('saveCountBtn');
+
+            // 2. ANEXAR EVENTOS: Usa Event Listeners em vez de onclick/oninput no HTML
+            numTasksInput.addEventListener('input', checkTaskAlert);
+            saveCountBtn.addEventListener('click', saveCount);
             
-            // 1. Carrega os dados do Supabase
+            // 3. Carrega os dados do Supabase
             await loadTasksFromDB(); 
             
-            // 2. Define a data e o valor inicial do input
+            // 4. Define a data e o valor inicial do input
             const initialDate = new Date().toISOString().split('T')[0];
             taskDateInput.value = initialDate;
             
@@ -336,11 +336,11 @@
                 numTasksInput.value = 1; 
             }
             
-            // 3. Atualiza o display inicial
+            // 5. Atualiza o display inicial
             checkTaskAlert(); 
             displayAllScheduledTasks();
             
-            // 4. Configura o evento para atualizar o input ao trocar a data
+            // 6. Configura o evento para atualizar o input ao trocar a data
             taskDateInput.addEventListener('change', function() {
                 const selectedDate = taskDateInput.value;
                 const savedCount = scheduledTasks[selectedDate] || 1; 
