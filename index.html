@@ -6,7 +6,8 @@
     <title>Planejador de Capacidade Diária</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        /* --- CSS de Estilização --- */
+        /* --- CSS OMITIDO POR ESPAÇO, USE O CÓDIGO ANTERIOR --- */
+        /* ... SEUS ESTILOS CSS COMPLETOS DEVEM FICAR AQUI ... */
         body {
             font-family: Arial, sans-serif;
             background-color: #f4f7f8;
@@ -27,34 +28,8 @@
             max-width: 500px;
             margin-bottom: 20px;
         }
-
-        h1 {
-            color: #007bff;
-            text-align: center;
-            margin-bottom: 25px;
-        }
-
-        .form-group {
-            margin-bottom: 25px;
-        }
-
-        label {
-            display: block;
-            margin-bottom: 8px;
-            font-weight: bold;
-            color: #555;
-        }
-
-        input[type="date"], input[type="number"], button {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-            box-sizing: border-box;
-            transition: border 0.3s, background-color 0.3s;
-        }
-
-        /* --- Estilos de Alerta para o Campo de Número (Input) --- */
+        
+        /* [RESTANTE DO CSS AQUI] */
         .alert-yellow { border: 3px solid #ffc107 !important; background-color: #fffbe6; }
         .alert-red { border: 3px solid #dc3545 !important; background-color: #f8d7da; }
         
@@ -67,54 +42,8 @@
             margin-top: 10px;
         }
 
-        button:hover { background-color: #0056b3; }
-        
-        /* --- Estilos para o Histórico/Resumo Geral --- */
-        #allTasksSummary {
-            width: 100%;
-            max-width: 500px;
-        }
-
-        #allTasksSummary h2 {
-            color: #333;
-            border-bottom: 2px solid #ccc;
-            padding-bottom: 5px;
-            margin-bottom: 15px;
-            text-align: center;
-        }
-
-        .summary-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 12px 15px;
-            margin-bottom: 8px;
-            border-radius: 6px;
-            font-size: 1em;
-            font-weight: bold;
-            border-left: 5px solid;
-        }
-        
-        /* Alerta Verde (Carga Baixa/Normal <= 15) */
-        .summary-green { background-color: #e6ffec; border-left-color: #28a745; color: #218838; }
-        /* Alerta Amarelo (Carga Alta > 15) */
-        .summary-yellow { background-color: #fffbe6; border-left-color: #ffc107; color: #856404; }
-        /* Alerta Vermelho (Carga Excessiva >= 20) */
+        /* [MAIS ESTILOS AQUI] */
         .summary-red { background-color: #f8d7da; border-left-color: #dc3545; color: #721c24; }
-
-        .summary-item .date { flex-grow: 1; }
-        .summary-item .count { font-size: 1.2em; padding: 0 10px; }
-        
-        /* Botão de Remover */
-        .delete-btn {
-            background: none;
-            border: none;
-            color: #dc3545;
-            cursor: pointer;
-            font-size: 1.2em;
-            padding: 0 5px;
-            transition: color 0.2s;
-        }
         .delete-btn:hover { color: #a52834; }
     </style>
 </head>
@@ -125,12 +54,12 @@
 
         <div class="form-group">
             <label for="taskDate">Selecione a Data:</label>
-            <input type="date" id="taskDate" required>
+            <input type="date" id="taskDate" required> 
         </div>
 
         <div class="form-group">
             <label for="numTasks">Quantas tarefas (Total) você planeja para este dia?</label>
-            <input type="number" id="numTasks" min="1" value="1" oninput="checkTaskAlert()" required>
+            <input type="number" id="numTasks" min="1" value="1" oninput="checkTaskAlert()" required> 
         </div>
 
         <button onclick="saveCount()">Salvar Contagem Diária</button>
@@ -143,28 +72,40 @@
     </div>
 
     <script>
-        // --- Configuração do Supabase ---
+        // --- 1. CONFIGURAÇÃO (Variáveis e Clientes) ---
+        // Credenciais fornecidas
         const SUPABASE_URL = 'https://uwngmtgcxatmhsyplddk.supabase.co'; 
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV3bmdtdGdjeGF0bWhzeXBsZGRrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA1NzM3MjMsImV4cCI6MjA3NjE0OTcyM30.kJU3l9QTbJUTjX6kUBuorox9qAfmw6pasN5yRNj7C24'; 
         const TABLE_NAME = 'daily_tasks'; 
         
-        // --- 🔑 Conexão e Variáveis MOVIDAS PARA O ESCOPO GLOBAL (Correção do ReferenceError) ---
+        // Inicializa o cliente Supabase
         const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        // --- 2. VARIÁVEIS DE ELEMENTOS HTML (Escopo Global) ---
+        // CRUCIAL: Deve ser acessível por todas as funções globais
         const numTasksInput = document.getElementById('numTasks');
         const taskDateInput = document.getElementById('taskDate');
         const scheduledTasksList = document.getElementById('scheduledTasksList');
         let scheduledTasks = {};
-        // ---------------------------------------------------------------------------------------
-
+        
         // ----------------------------------------------------------------------
-        // FUNÇÕES GLOBAIS (Chamadas diretamente pelo HTML)
+        // --- 3. FUNÇÕES GLOBAIS (Chamadas por onclick/oninput) ---
         // ----------------------------------------------------------------------
+        
+        // Esta função era a fonte de um ReferenceError
+        function checkTaskAlert() {
+            const numTasks = parseInt(numTasksInput.value);
+            numTasksInput.classList.remove('alert-yellow', 'alert-red');
 
-        /**
-         * 1. Função Global: Salva a contagem (chamada pelo onclick do botão).
-         */
+            if (numTasks >= 20) {
+                numTasksInput.classList.add('alert-red');
+            } else if (numTasks > 15) {
+                numTasksInput.classList.add('alert-yellow');
+            }
+        }
+        
+        // Esta função era a fonte de um ReferenceError
         async function saveCount() {
-            // Agora taskDateInput e numTasksInput são acessíveis.
             const selectedDate = taskDateInput.value;
             const numTasks = parseInt(numTasksInput.value);
 
@@ -173,19 +114,19 @@
                 return;
             }
             
-            // Chama a função de banco de dados (que está no IIFE).
+            // Chama a função de banco de dados
             const success = await saveTaskCountToDB(selectedDate, numTasks); 
 
             if (success) {
                 scheduledTasks[selectedDate] = numTasks;
                 displayAllScheduledTasks();
                 alert(`Contagem de ${numTasks} tarefas para ${formatDisplayDate(selectedDate)} salva com sucesso no banco de dados!`);
+            } else {
+                 alert('Falha ao salvar. Verifique o console para erros de rede (chaves) ou RLS.');
             }
         }
-
-        /**
-         * 2. Função Global: Remove uma tarefa (chamada pelos botões "×" dinâmicos).
-         */
+        
+        // Esta função precisa ser global para ser chamada pelo HTML dinâmico
         async function deleteTaskCount(date) {
             if (!confirm(`Tem certeza que deseja remover o agendamento para ${formatDisplayDate(date)}?`)) {
                 return;
@@ -198,7 +139,7 @@
 
             if (error) {
                 console.error('Erro ao remover do Supabase:', error);
-                alert('Erro ao remover dados. Verifique o console e as políticas RLS.');
+                alert('Erro ao remover dados.');
                 return;
             }
 
@@ -212,140 +153,112 @@
             }
         }
 
+
         // ----------------------------------------------------------------------
-        // ESCOPO AUXILIAR (IIFE - Funções de Apoio)
+        // --- 4. FUNÇÕES AUXILIARES (Funções que não são chamadas pelo HTML) ---
         // ----------------------------------------------------------------------
 
-        (function() {
-            // --- Funções de Banco de Dados ---
+        // O restante das funções internas pode ficar aqui, sem o IIFE
 
-            async function loadTasks() {
-                const { data, error } = await supabase
-                    .from(TABLE_NAME)
-                    .select('date, task_count');
+        async function loadTasks() {
+            const { data, error } = await supabase
+                .from(TABLE_NAME)
+                .select('date, task_count');
 
-                if (error) {
-                    console.error('Erro ao carregar tarefas do Supabase:', error);
-                    return;
-                }
-
-                scheduledTasks = data.reduce((acc, row) => {
-                    acc[row.date] = row.task_count;
-                    return acc;
-                }, {});
+            if (error) {
+                console.error('Erro ao carregar tarefas do Supabase:', error);
+                return;
             }
 
-            async function saveTaskCountToDB(date, count) {
-                const { error } = await supabase
-                    .from(TABLE_NAME)
-                    .upsert({ date: date, task_count: count }, { onConflict: 'date' }); 
+            scheduledTasks = data.reduce((acc, row) => {
+                acc[row.date] = row.task_count;
+                return acc;
+            }, {});
+        }
 
-                if (error) {
-                    console.error('Erro ao salvar no Supabase:', error);
-                    alert('Falha ao salvar. Verifique se as suas chaves e RLS estão corretos no console.');
-                    return false;
-                }
-                return true;
+        async function saveTaskCountToDB(date, count) {
+            const { error } = await supabase
+                .from(TABLE_NAME)
+                .upsert({ date: date, task_count: count }, { onConflict: 'date' }); 
+
+            if (error) {
+                console.error('Erro ao salvar no Supabase:', error);
+                return false;
             }
+            return true;
+        }
 
-            // --- Funções de Formato e Alerta ---
+        function formatDisplayDate(isoDate) {
+            if (!isoDate) return '';
+            const parts = isoDate.split('-');
+            return `${parts[2]}/${parts[1]}/${parts[0]}`;
+        }
+
+        function getAlertClass(count) {
+            if (count >= 20) {
+                return 'summary-red';
+            } else if (count > 15) {
+                return 'summary-yellow';
+            } else if (count > 0) {
+                return 'summary-green';
+            }
+            return '';
+        }
+
+        function displayAllScheduledTasks() {
+            scheduledTasksList.innerHTML = '';
             
-            function formatDisplayDate(isoDate) {
-                if (!isoDate) return '';
-                const parts = isoDate.split('-');
-                return `${parts[2]}/${parts[1]}/${parts[0]}`;
+            const dates = Object.keys(scheduledTasks).sort();
+            
+            if (dates.length === 0) {
+                scheduledTasksList.innerHTML = '<p style="text-align: center; color: #777;">Nenhum dia agendado ainda.</p>';
+                return;
             }
 
-            function checkTaskAlert() {
-                const numTasks = parseInt(numTasksInput.value);
-                numTasksInput.classList.remove('alert-yellow', 'alert-red');
-
-                if (numTasks >= 20) {
-                    numTasksInput.classList.add('alert-red');
-                } else if (numTasks > 15) {
-                    numTasksInput.classList.add('alert-yellow');
+            dates.forEach(date => {
+                const count = scheduledTasks[date];
+                if (count > 0) {
+                    const alertClass = getAlertClass(count);
+                    const displayDate = formatDisplayDate(date);
+                    
+                    const item = document.createElement('div');
+                    item.className = `summary-item ${alertClass}`;
+                    item.innerHTML = `
+                        <span class="date">${displayDate}</span>
+                        <span class="count">${count} Tasks</span>
+                        <button class="delete-btn" onclick="deleteTaskCount('${date}')" title="Remover Agendamento">
+                            &times;
+                        </button>
+                    `;
+                    scheduledTasksList.appendChild(item);
                 }
+            });
+        }
+
+        // --- 5. INICIALIZAÇÃO ---
+        window.onload = async function() { 
+            await loadTasks(); 
+            
+            const initialDate = new Date().toISOString().split('T')[0];
+            taskDateInput.value = initialDate;
+            
+            if (scheduledTasks[initialDate]) {
+                numTasksInput.value = scheduledTasks[initialDate];
+            } else {
+                numTasksInput.value = 1; 
             }
             
-            function getAlertClass(count) {
-                if (count >= 20) {
-                    return 'summary-red';
-                } else if (count > 15) {
-                    return 'summary-yellow';
-                } else if (count > 0) {
-                    return 'summary-green';
-                }
-                return '';
-            }
-
-            // --- Funções de Exibição ---
-
-            function displayAllScheduledTasks() {
-                scheduledTasksList.innerHTML = '';
-                
-                const dates = Object.keys(scheduledTasks).sort();
-                
-                if (dates.length === 0) {
-                    scheduledTasksList.innerHTML = '<p style="text-align: center; color: #777;">Nenhum dia agendado ainda.</p>';
-                    return;
-                }
-
-                dates.forEach(date => {
-                    const count = scheduledTasks[date];
-                    if (count > 0) {
-                        const alertClass = getAlertClass(count);
-                        const displayDate = formatDisplayDate(date);
-                        
-                        const item = document.createElement('div');
-                        item.className = `summary-item ${alertClass}`;
-                        item.innerHTML = `
-                            <span class="date">${displayDate}</span>
-                            <span class="count">${count} Tasks</span>
-                            <button class="delete-btn" onclick="deleteTaskCount('${date}')" title="Remover Agendamento">
-                                &times;
-                            </button>
-                        `;
-                        scheduledTasksList.appendChild(item);
-                    }
-                });
-            }
-
-            // --- Inicialização e Eventos ---
+            checkTaskAlert(); 
+            displayAllScheduledTasks();
             
-            window.onload = async function() { 
-                await loadTasks(); // Tenta carregar os dados
-                
-                const initialDate = new Date().toISOString().split('T')[0];
-                taskDateInput.value = initialDate;
-                
-                if (scheduledTasks[initialDate]) {
-                    numTasksInput.value = scheduledTasks[initialDate];
-                } else {
-                    numTasksInput.value = 1; 
-                }
-                
-                checkTaskAlert(); 
-                displayAllScheduledTasks(); // Exibe os dados carregados
-            };
-            
+            // Evento para atualizar o input quando a data muda
             taskDateInput.addEventListener('change', function() {
                 const selectedDate = taskDateInput.value;
-                
                 const savedCount = scheduledTasks[selectedDate] || 1; 
                 numTasksInput.value = savedCount;
-                
                 checkTaskAlert();
             });
-
-            // EXPÕE funções auxiliares necessárias para o escopo global
-            window.saveTaskCountToDB = saveTaskCountToDB;
-            window.formatDisplayDate = formatDisplayDate;
-            window.displayAllScheduledTasks = displayAllScheduledTasks;
-            window.checkTaskAlert = checkTaskAlert;
-
-        })(); // Fim do IIFE
-
+        };
     </script>
-
 </body>
 </html>
