@@ -6,7 +6,7 @@
     <title>Planejador de Capacidade Diária</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        /* --- CSS de Estilização Completo (Seu código original) --- */
+        /* ... Seu CSS (Omitido para brevidade, mantenha o original) ... */
         body {
             font-family: Arial, sans-serif;
             background-color: #f4f7f8;
@@ -124,25 +124,22 @@
     <script defer>
         // --- 1. CONFIGURAÇÃO E CLIENTE SUPABASE ---
         const SUPABASE_URL = 'https://uwngmtgcxatmhsyplddk.supabase.co'; 
-        // Esta chave é pública (ANON KEY) e é segura para uso no frontend.
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV3bmdtdGdjeGF0bWhzeXBsZGRrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA1NzM3MjMsImV4cCI6MjA3NjE0OTcyM30.kJU3l9QTbJUTjX6kUBuorox9qAfmw6pasN5yRNj7C24'; 
         const TABLE_NAME = 'daily_tasks'; 
         
-        // Inicializa o cliente Supabase.
         const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-        // --- 2. Variáveis de Elementos HTML e Estado (Serão preenchidas no DOMContentLoaded) ---
+        // --- 2. Variáveis de Elementos HTML e Estado (Declaradas, preenchidas no DOMContentLoaded) ---
         let numTasksInput;
         let taskDateInput;
         let scheduledTasksList;
         let scheduledTasks = {};
         
         // ----------------------------------------------------------------------
-        // --- 3. FUNÇÕES SUPABASE (Substituindo loadTasks e saveTasks) ---
+        // --- 3. FUNÇÕES SUPABASE (Lógica de DB) ---
         // ----------------------------------------------------------------------
 
         async function loadTasksFromDB() {
-            // Equivalente ao loadTasks()
             const { data, error } = await supabase
                 .from(TABLE_NAME)
                 .select('date, task_count');
@@ -152,7 +149,6 @@
                 return;
             }
 
-            // Mapeia o array de objetos do banco para o objeto {date: count}
             scheduledTasks = data.reduce((acc, row) => {
                 acc[row.date] = row.task_count;
                 return acc;
@@ -160,13 +156,13 @@
         }
 
         async function saveTaskCountToDB(date, count) {
-             // Equivalente ao saveTasks()
             const { error } = await supabase
                 .from(TABLE_NAME)
                 .upsert({ date: date, task_count: count }, { onConflict: 'date' }); 
 
             if (error) {
                 console.error('Erro ao salvar no Supabase:', error);
+                // ESTE ERRO PODE SER O 403 (RLS INSERT FALTANDO)
                 return false;
             }
             return true;
@@ -198,8 +194,7 @@
             }
         }
         
-        // Torna a função de exclusão global para o onclick no HTML gerado
-        window.deleteTaskCount = deleteTaskCount;
+        window.deleteTaskCount = deleteTaskCount; // Torna acessível pelo HTML gerado
 
         // ----------------------------------------------------------------------
         // --- 4. FUNÇÕES DE LÓGICA (Mantidas do seu código local) ---
@@ -263,9 +258,7 @@
             });
         }
 
-
         async function saveCount() {
-            // A função é declarada como ASYNC para esperar o saveTaskCountToDB
             const selectedDate = taskDateInput.value;
             const numTasks = parseInt(numTasksInput.value);
 
@@ -277,22 +270,19 @@
             const success = await saveTaskCountToDB(selectedDate, numTasks); 
 
             if (success) {
-                // 1. Atualiza o estado local APÓS o sucesso no banco
                 scheduledTasks[selectedDate] = numTasks;
-
-                // 2. Atualiza o display
                 displayAllScheduledTasks();
                 alert(`Contagem de ${numTasks} tarefas para ${formatDisplayDate(selectedDate)} salva com sucesso no banco de dados!`);
             } else {
-                 alert('Falha ao salvar. Verifique o Console (F12) para erros de conexão (401, 403, 404).');
+                 alert('Falha ao salvar. Verifique o Console (F12) para erros de permissão de rede (403 Forbidden).');
             }
         }
-
+        
         // ----------------------------------------------------------------------
-        // --- 5. INICIALIZAÇÃO DEFINITIVA (DOMContentLoaded, agora garantido pelo DEFER) ---
+        // --- 5. INICIALIZAÇÃO DEFINITIVA (Garantida pelo DEFER) ---
         // ----------------------------------------------------------------------
         document.addEventListener('DOMContentLoaded', async () => {
-             // 1. ATRIBUIÇÃO DE ELEMENTOS
+             // 1. ATRIBUIÇÃO DE ELEMENTOS (Ocorre APÓS o DOM estar pronto)
             numTasksInput = document.getElementById('numTasks');
             taskDateInput = document.getElementById('taskDate');
             scheduledTasksList = document.getElementById('scheduledTasksList');
@@ -300,7 +290,7 @@
             // 2. Carrega os dados do Supabase
             await loadTasksFromDB(); 
             
-            // 3. Define a data e o valor inicial do input
+            // 3. Define o estado inicial da interface (similar ao seu window.onload)
             const initialDate = new Date().toISOString().split('T')[0];
             taskDateInput.value = initialDate;
             
@@ -310,21 +300,19 @@
                 numTasksInput.value = 1; 
             }
             
-            // 4. Atualiza o display
             checkTaskAlert(); 
             displayAllScheduledTasks();
             
-            // 5. Configura o evento para atualizar o input ao trocar a data
+            // 4. Configura o evento CHANGE
             taskDateInput.addEventListener('change', function() {
                 const selectedDate = taskDateInput.value;
                 const savedCount = scheduledTasks[selectedDate] || 1; 
                 numTasksInput.value = savedCount;
                 checkTaskAlert();
             });
-            
-            // NOTA: O oninput="checkTaskAlert()" no HTML e onclick="saveCount()"
-            // são usados e agora são garantidos por serem funções globais (sem const/let)
-            // e pelo script ter o atributo DEFER, garantindo a inicialização.
+            // NOTA: O oninput="checkTaskAlert()" e onclick="saveCount()" no HTML
+            // agora funcionarão porque o script DEFER garante que todas essas funções
+            // globais já existem quando os elementos são lidos.
         });
     </script>
 </head>
