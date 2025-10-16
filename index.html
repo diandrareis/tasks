@@ -147,7 +147,7 @@
         // ⚠️ SUBSTITUA COM SUAS CHAVES REAIS!
         const SUPABASE_URL = 'https://uwngmtgcxatmhsyplddk.supabase.co'; 
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV3bmdtdGdjeGF0bWhzeXBsZGRrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA1NzM3MjMsImV4cCI6MjA3NjE0OTcyM30.kJU3l9QTbJUTjX6kUBuorox9qAfmw6pasN5yRNj7C24'; 
-        const TABLE_NAME = 'daily_tasks';
+        const TABLE_NAME = 'daily_tasks'; 
         const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         // --- Variáveis e Seletores (Escopo Global) ---
@@ -157,7 +157,7 @@
         let scheduledTasks = {};
 
         // ----------------------------------------------------------------------
-        // FUNÇÕES GLOBAIS (Chamadas DIRETAMENTE pelo HTML)
+        // FUNÇÕES GLOBAIS (Chamadas diretamente pelo HTML)
         // ----------------------------------------------------------------------
 
         /**
@@ -172,7 +172,6 @@
                 return;
             }
             
-            // Chama a função interna
             const success = await saveTaskCountToDB(selectedDate, numTasks);
 
             if (success) {
@@ -211,7 +210,6 @@
             }
         }
 
-
         // ----------------------------------------------------------------------
         // ESCOPO PROTEGIDO (IIFE - Funções Auxiliares)
         // ----------------------------------------------------------------------
@@ -226,7 +224,6 @@
 
                 if (error) {
                     console.error('Erro ao carregar tarefas do Supabase:', error);
-                    // Falha silenciosa na leitura para não quebrar o carregamento.
                     return;
                 }
 
@@ -243,7 +240,6 @@
 
                 if (error) {
                     console.error('Erro ao salvar no Supabase:', error);
-                    alert('Erro ao salvar dados. Verifique o console e as políticas RLS.');
                     return false;
                 }
                 return true;
@@ -338,7 +334,7 @@
                 checkTaskAlert();
             });
 
-            // EXPÕE funções internas que são necessárias para as funções globais (saveCount, deleteTaskCount)
+            // EXPÕE funções internas necessárias para as funções globais
             window.saveTaskCountToDB = saveTaskCountToDB;
             window.formatDisplayDate = formatDisplayDate;
             window.displayAllScheduledTasks = displayAllScheduledTasks;
