@@ -1,329 +1,345 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Planejador de Capacidade Diária</title>
-    <style>
-        /* --- CSS de Estilização (Não alterado) --- */
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #f4f7f8;
-            color: #333;
-            margin: 0;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Planejador de Capacidade Diária</title>
+    <style>
+        /* --- CSS de Estilização --- */
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f7f8;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
 
-        .container {
-            background-color: #ffffff;
-            padding: 30px;
-            border-radius: 10px;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-            width: 100%;
-            max-width: 500px;
-            margin-bottom: 20px;
-        }
+        .container {
+            background-color: #ffffff;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 500px;
+            margin-bottom: 20px;
+        }
 
-        h1 {
-            color: #007bff;
-            text-align: center;
-            margin-bottom: 25px;
-        }
+        /* AJUSTE: Titulo Principal com o Icone Inserido no HTML */
+        h1 {
+            color: #007bff;
+            text-align: center;
+            margin-bottom: 25px;
+            font-size: 1.8em;
+            font-weight: 600;
+        }
 
-        .form-group {
-            margin-bottom: 25px;
-        }
+        .form-group {
+            margin-bottom: 25px;
+        }
 
-        label {
-            display: block;
-            margin-bottom: 8px;
-            font-weight: bold;
-            color: #555;
-        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #555;
+        }
 
-        input[type="date"], input[type="number"], button {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-            box-sizing: border-box;
-            transition: border 0.3s, background-color 0.3s;
-        }
+        /* Estilos base para inputs */
+        input[type="date"], input[type="number"], button {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            box-sizing: border-box;
+            transition: border 0.3s, background-color 0.3s;
+            font-size: 1em;
+        }
+        
+        /* AJUSTE: O input de data na imagem está sem borda inferior. */
+        #taskDate {
+            border: none;
+            border-bottom: 1px solid #ccc; /* Dá uma separação sutil */
+            padding: 10px 0;
+            border-radius: 0;
+        }
 
-        /* --- Estilos de Alerta para o Campo de Número (Input) --- */
-        .alert-yellow {
-            border: 3px solid #ffc107 !important;
-            background-color: #fffbe6;
-        }
 
-        .alert-red {
-            border: 3px solid #dc3545 !important;
-            background-color: #f8d7da;
-        }
-        /* ----------------------------------------------------------- */
+        /* --- Estilos de Alerta para o Campo de Número (Input) --- */
+        .alert-yellow {
+            border: 3px solid #ffc107 !important;
+            background-color: #fffbe6;
+        }
 
-        button {
-            background-color: #007bff;
-            color: white;
-            font-weight: bold;
-            cursor: pointer;
-            transition: background-color 0.3s ease;
-            margin-top: 10px;
-        }
+        .alert-red {
+            border: 3px solid #dc3545 !important;
+            background-color: #f8d7da;
+        }
+        
+        button {
+            background-color: #007bff;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            margin-top: 10px;
+            border: none;
+        }
 
-        button:hover {
-            background-color: #0056b3;
-        }
-        
-        /* --- Estilos para o Histórico/Resumo Geral --- */
-        #allTasksSummary {
-            width: 100%;
-            max-width: 500px;
-        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        
+        /* --- Estilos para o Histórico/Resumo Geral --- */
+        #allTasksSummary {
+            width: 100%;
+            max-width: 500px;
+        }
 
-        #allTasksSummary h2 {
-            color: #333;
-            border-bottom: 2px solid #ccc;
-            padding-bottom: 5px;
-            margin-bottom: 15px;
-            text-align: center;
-        }
+        /* AJUSTE: Título Secundário - Cor e Centralização */
+        #allTasksSummary h2 {
+            color: #555;
+            border-bottom: 2px solid #ccc;
+            padding-bottom: 5px;
+            margin-bottom: 15px;
+            text-align: center;
+            font-weight: normal;
+            font-size: 1.5em;
+        }
 
-        .summary-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 12px 15px;
-            margin-bottom: 8px;
-            border-radius: 6px;
-            font-size: 1em;
-            font-weight: bold;
-            border-left: 5px solid;
-        }
+        .summary-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 15px;
+            margin-bottom: 8px;
+            border-radius: 6px;
+            font-size: 1em;
+            font-weight: bold;
+            border-left: 5px solid;
+        }
 
-        /* Alerta Verde (Carga Baixa/Normal <= 15) */
-        .summary-green {
-            background-color: #e6ffec;
-            border-left-color: #28a745;
-            color: #218838;
-        }
+        /* Alerta Verde (Carga Baixa/Normal <= 15) */
+        .summary-green {
+            background-color: #e6ffec;
+            border-left-color: #28a745;
+            color: #218838;
+        }
 
-        /* Alerta Amarelo (Carga Alta > 15) */
-        .summary-yellow {
-            background-color: #fffbe6;
-            border-left-color: #ffc107;
-            color: #856404;
-        }
+        /* Alerta Amarelo (Carga Alta > 15) */
+        .summary-yellow {
+            background-color: #fffbe6;
+            border-left-color: #ffc107;
+            color: #856404;
+        }
 
-        /* Alerta Vermelho (Carga Excessiva > 20) */
-        .summary-red {
-            background-color: #f8d7da;
-            border-left-color: #dc3545;
-            color: #721c24;
-        }
+        /* Alerta Vermelho (Carga Excessiva > 20) */
+        .summary-red {
+            background-color: #f8d7da;
+            border-left-color: #dc3545;
+            color: #721c24;
+        }
 
-        .summary-item .date {
-            flex-grow: 1;
-        }
+        .summary-item .date {
+            flex-grow: 1;
+        }
 
-        .summary-item .count {
-            font-size: 1.2em;
-            padding: 0 10px;
-        }
-    </style>
+        .summary-item .count {
+            font-size: 1.2em;
+            padding: 0 10px;
+        }
+    </style>
 </head>
 <body>
 
-    <div class="container">
-        <h1>🔢 Contador de Capacidade Diária</h1>
+    <div class="container">
+        <h1><span style="color: #007bff;">1️⃣2️⃣3️⃣4️⃣</span> Contador de Capacidade Diária</h1>
 
-        <div class="form-group">
-            <label for="taskDate">Selecione a Data:</label>
-            <input type="date" id="taskDate" required>
-        </div>
+        <div class="form-group">
+            <label for="taskDate">Selecione a Data:</label>
+            <input type="date" id="taskDate" required>
+        </div>
 
-        <div class="form-group">
-            <label for="numTasks">Quantas tarefas (Total) você planeja para este dia?</label>
-            <input type="number" id="numTasks" min="1" value="1" oninput="checkTaskAlert()" required>
-        </div>
+        <div class="form-group">
+            <label for="numTasks">Quantas tarefas (Total) você planeja para este dia?</label>
+            <input type="number" id="numTasks" min="1" value="1" oninput="checkTaskAlert()" required>
+        </div>
 
-        <button onclick="saveCount()">Salvar Contagem Diária</button>
-    </div>
-    
-    <div id="allTasksSummary">
-        <h2>📅 Dias Agendados</h2>
-        <div id="scheduledTasksList">
-                    </div>
-    </div>
+        <button onclick="saveCount()">Salvar Contagem Diária</button>
+    </div>
+    
+    <div id="allTasksSummary">
+        <h2><span style="color: #555;">🗓️</span> Dias Agendados</h2>
+        <div id="scheduledTasksList">
+            </div>
+    </div>
 
-            <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    
-        <script>
-        // --- 1. Configuração do Supabase e Variáveis ---
-        // URL e Chave ANON
-        const SUPABASE_URL = 'https://uwngmtgcxatmhsyplddk.supabase.co';
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV3bmdtdGdjeGF0bWhzeXBsZGRrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA1NzM3MjMsImV4cCI6MjA3NjE0OTcyM30.kJU3l9QTbJUTjX6kUBuorox9qAfmw6pasN5yRNj7C24';
-        const TABLE_NAME = 'daily_tasks'; // Nome da sua tabela
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <script>
+        // --- 1. Configuração do Supabase e Variáveis ---
+        // Seus Dados de Conexão:
+        const SUPABASE_URL = 'https://uwngmtgcxatmhsyplddk.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV3bmdtdGdjeGF0bWhzeXBsZGRrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA1NzM3MjMsImV4cCI6MjA3NjE0OTcyM30.kJU3l9QTbJUTjX6kUBuorox9qAfmw6pasN5yRNj7C24';
+        const TABLE_NAME = 'daily_tasks'; 
 
-        // Inicializa o cliente Supabase
-        const { createClient } = supabase;
-        const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        // Inicializa o cliente Supabase
+        const { createClient } = supabase;
+        const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-        const numTasksInput = document.getElementById('numTasks');
-        const taskDateInput = document.getElementById('taskDate');
-        const scheduledTasksList = document.getElementById('scheduledTasksList');
+        const numTasksInput = document.getElementById('numTasks');
+        const taskDateInput = document.getElementById('taskDate');
+        const scheduledTasksList = document.getElementById('scheduledTasksList');
 
-        let scheduledTasks = {}; // Cache local
+        let scheduledTasks = {}; // Cache local para performance
 
-        // --- Funções de Formato e Alerta ---
+        // --- Funções de Formato e Alerta ---
 
-        /** Converte data ISO (AAAA-MM-DD) para DD/MM/AAAA. */
-        function formatDisplayDate(isoDate) {
-            if (!isoDate) return '';
-            const parts = isoDate.split('-');
-            return `${parts[2]}/${parts[1]}/${parts[0]}`;
-        }
+        /** Converte data ISO (AAAA-MM-DD) para DD/MM/AAAA. */
+        function formatDisplayDate(isoDate) {
+            if (!isoDate) return '';
+            const parts = isoDate.split('-');
+            return `${parts[2]}/${parts[1]}/${parts[0]}`;
+        }
 
-        /** Verifica o número no campo de input e aplica as classes de alerta no input. */
-        function checkTaskAlert() {
-            const numTasks = parseInt(numTasksInput.value);
+        /** Verifica o número no campo de input e aplica as classes de alerta no input. */
+        function checkTaskAlert() {
+            const numTasks = parseInt(numTasksInput.value);
 
-            numTasksInput.classList.remove('alert-yellow', 'alert-red');
+            numTasksInput.classList.remove('alert-yellow', 'alert-red');
 
-            if (numTasks > 20) {
-                numTasksInput.classList.add('alert-red');
-            } else if (numTasks > 15) {
-                numTasksInput.classList.add('alert-yellow');
-            }
-        }
+            if (numTasks > 20) {
+                numTasksInput.classList.add('alert-red');
+            } else if (numTasks > 15) {
+                numTasksInput.classList.add('alert-yellow');
+            }
+        }
 
-        /** Retorna a classe CSS de alerta (red, yellow, ou green) com base na contagem. */
-        function getAlertClass(count) {
-            if (count > 20) {
-                return 'summary-red';
-            } else if (count > 15) {
-                return 'summary-yellow';
-            } else if (count > 0) {
-                return 'summary-green';
-            }
-            return '';
-        }
+        /** Retorna a classe CSS de alerta (red, yellow, ou green) com base na contagem. */
+        function getAlertClass(count) {
+            if (count > 20) {
+                return 'summary-red';
+            } else if (count > 15) {
+                return 'summary-yellow';
+            } else if (count > 0) {
+                return 'summary-green';
+            }
+            return '';
+        }
 
-        // --- 2. Funções de Comunicação com o Supabase ---
+        // --- 2. Funções de Comunicação com o Supabase ---
 
-        /** Carrega todas as tarefas agendadas do Supabase para o cache local. */
-        async function loadTasks() {
-            const { data, error } = await supabaseClient
-                .from(TABLE_NAME)
-                .select('date, task_count'); 
+        /** Carrega todas as tarefas agendadas do Supabase. */
+        async function loadTasks() {
+            const { data, error } = await supabaseClient
+                .from(TABLE_NAME)
+                .select('date, task_count'); 
 
-            if (error) {
-                console.error('Erro ao carregar dados:', error.message);
-                return;
-            }
+            if (error) {
+                console.error('Erro ao carregar dados:', error.message);
+                return;
+            }
 
-            scheduledTasks = {}; // Limpa o cache
-            data.forEach(item => {
-                // Mapeia o resultado do banco para o cache: {'YYYY-MM-DD': count}
-                scheduledTasks[item.date] = item.task_count; 
-            });
-        }
+            scheduledTasks = {};
+            data.forEach(item => {
+                scheduledTasks[item.date] = item.task_count; 
+            });
+        }
 
-        /** Salva (Insere ou Atualiza) a contagem de tarefas para a data no Supabase. */
-        async function saveCount() {
-            const selectedDate = taskDateInput.value;
-            const numTasks = parseInt(numTasksInput.value);
+        /** Salva (Insere ou Atualiza) a contagem de tarefas. */
+        async function saveCount() {
+            const selectedDate = taskDateInput.value;
+            const numTasks = parseInt(numTasksInput.value);
 
-            if (!selectedDate || isNaN(numTasks) || numTasks < 1) {
-                alert('Por favor, selecione uma data e insira um número válido de tarefas (mínimo 1).');
-                return;
-            }
-            
-            const taskData = {
-                date: selectedDate,
-                task_count: numTasks
-            };
+            if (!selectedDate || isNaN(numTasks) || numTasks < 1) {
+                alert('Por favor, selecione uma data e insira um número válido de tarefas (mínimo 1).');
+                return;
+            }
+            
+            const taskData = {
+                date: selectedDate,
+                task_count: numTasks
+            };
 
-            // Usa upsert: se a 'date' existir, atualiza; senão, insere.
-            const { data, error } = await supabaseClient
-                .from(TABLE_NAME)
-                .upsert([taskData], { onConflict: 'date' }); 
+            // Upsert: atualiza se a 'date' já existe, insere se for nova.
+            const { error } = await supabaseClient
+                .from(TABLE_NAME)
+                .upsert([taskData], { onConflict: 'date' }); 
 
-            if (error) {
-                console.error('Erro ao salvar no Supabase:', error.message);
-                alert('Erro ao salvar a contagem diária. Verifique o console e as permissões RLS.');
-                return;
-            }
+            if (error) {
+                console.error('Erro ao salvar no Supabase:', error.message);
+                alert('Erro ao salvar. Verifique se a tabela foi criada e as permissões RLS no Supabase.');
+                return;
+            }
 
-            // Atualiza o cache local e o display
-            scheduledTasks[selectedDate] = numTasks;
-            displayAllScheduledTasks();
-            alert(`Contagem de ${numTasks} tarefas para ${formatDisplayDate(selectedDate)} salva com sucesso!`);
-        }
+            // Atualiza cache e display
+            scheduledTasks[selectedDate] = numTasks;
+            displayAllScheduledTasks();
+            alert(`Contagem de ${numTasks} tarefas para ${formatDisplayDate(selectedDate)} salva com sucesso!`);
+        }
 
-        // --- Funções de Exibição ---
+        // --- Funções de Exibição ---
 
-        /** Exibe todos os dias agendados. */
-        function displayAllScheduledTasks() {
-            scheduledTasksList.innerHTML = '';
-            
-            const dates = Object.keys(scheduledTasks).sort(); // Ordena as datas
-            
-            if (dates.length === 0) {
-                scheduledTasksList.innerHTML = '<p style="text-align: center; color: #777;">Nenhum dia agendado ainda.</p>';
-                return;
-            }
+        /** Exibe todos os dias agendados. */
+        function displayAllScheduledTasks() {
+            scheduledTasksList.innerHTML = '';
+            
+            const dates = Object.keys(scheduledTasks).sort();
+            
+            if (dates.length === 0) {
+                scheduledTasksList.innerHTML = '<p style="text-align: center; color: #777;">Nenhum dia agendado ainda.</p>';
+                return;
+            }
 
-            dates.forEach(date => {
-                const count = scheduledTasks[date];
-                if (count > 0) {
-                    const alertClass = getAlertClass(count);
-                    const displayDate = formatDisplayDate(date);
-                    
-                    const item = document.createElement('div');
-                    item.className = `summary-item ${alertClass}`;
-                    item.innerHTML = `
-                        <span class="date">${displayDate}</span>
-                        <span class="count">${count} Tasks</span>
-                    `;
-                    scheduledTasksList.appendChild(item);
-                }
-            });
-        }
+            dates.forEach(date => {
+                const count = scheduledTasks[date];
+                if (count > 0) {
+                    const alertClass = getAlertClass(count);
+                    const displayDate = formatDisplayDate(date);
+                    
+                    const item = document.createElement('div');
+                    item.className = `summary-item ${alertClass}`;
+                    item.innerHTML = `
+                        <span class="date">${displayDate}</span>
+                        <span class="count">${count} Tasks</span>
+                    `;
+                    scheduledTasksList.appendChild(item);
+                }
+            });
+        }
 
-        // --- 3. Inicialização e Eventos ---
+        // --- 3. Inicialização e Eventos ---
 
-        async function initializeApp() {
-            await loadTasks(); // Carrega os dados do Supabase
+        async function initializeApp() {
+            await loadTasks(); // Carrega os dados do Supabase
 
-            // Define a data atual como padrão
-            const initialDate = new Date().toISOString().split('T')[0];
-            taskDateInput.value = initialDate;
-            
-            // Tenta carregar a contagem salva para a data atual
-            const savedCount = scheduledTasks[initialDate] || 1;
-            numTasksInput.value = savedCount;
-            
-            checkTaskAlert(); 
-            displayAllScheduledTasks(); 
-        }
+            // Define a data atual como padrão
+            const initialDate = new Date().toISOString().split('T')[0];
+            taskDateInput.value = initialDate;
+            
+            // Carrega a contagem salva para a data atual (ou 1 se não houver)
+            const savedCount = scheduledTasks[initialDate] || 1;
+            numTasksInput.value = savedCount;
+            
+            checkTaskAlert(); 
+            displayAllScheduledTasks(); 
+        }
 
-        /** Evento: Atualiza o input ao trocar a data. */
-        taskDateInput.addEventListener('change', function() {
-            const selectedDate = taskDateInput.value;
-            
-            // Carrega a contagem salva do cache (ou 1 se não houver)
-            const savedCount = scheduledTasks[selectedDate] || 1; 
-            numTasksInput.value = savedCount;
-            
-            checkTaskAlert();
-        });
+        /** Evento: Atualiza o input ao trocar a data. */
+        taskDateInput.addEventListener('change', function() {
+            const selectedDate = taskDateInput.value;
+            
+            // Carrega a contagem salva do cache
+            const savedCount = scheduledTasks[selectedDate] || 1; 
+            numTasksInput.value = savedCount;
+            
+            checkTaskAlert();
+        });
 
-        window.onload = initializeApp; 
-    </script>
-    
+        window.onload = initializeApp; 
+    </script>
+    
 </body>
 </html>
