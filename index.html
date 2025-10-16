@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Planejador de Capacidade Diária</title>
     <style>
-        /* --- CSS de Estilização (Conforme a Imagem) --- */
+        /* --- CSS de Estilização --- */
         body {
             font-family: Arial, sans-serif;
             background-color: #f4f7f8;
@@ -48,7 +48,7 @@
         }
 
         /* Estilos base para inputs */
-        input[type="date"], input[type="number"], button {
+        input[type="date"], input[type="number"], input[type="email"], input[type="password"], button {
             padding: 10px;
             border: 1px solid #ccc;
             border-radius: 5px;
@@ -59,17 +59,17 @@
         
         /* Input de data sem borda inferior, conforme a imagem. */
         #taskDate {
-            width: 100%; /* Fixa a largura do input de data */
+            width: 100%;
             border: none;
             border-bottom: 1px solid #ccc;
             padding: 10px 0;
             border-radius: 0;
         }
         
-        /* --- NOVO CSS: Container para o Contador --- */
+        /* Container para os controles do contador */
         .counter-controls {
             display: flex;
-            gap: 10px; /* Espaçamento entre o botão e o input */
+            gap: 10px;
             align-items: center;
         }
 
@@ -78,7 +78,7 @@
             height: 40px; 
             padding: 0;
             margin: 0;
-            flex-shrink: 0; /* Não deixa o botão encolher */
+            flex-shrink: 0;
             background-color: #f0f0f0;
             color: #333;
             font-size: 1.5em;
@@ -91,14 +91,13 @@
         }
 
         #numTasks {
-            flex-grow: 1; /* O input ocupa o espaço restante */
+            flex-grow: 1;
             text-align: center;
-            width: auto; /* Deixa o flexbox controlar a largura */
+            width: auto;
         }
-        /* ------------------------------------------- */
+        
+        /* --- Estilos de Alerta e Botões Principais --- */
 
-
-        /* --- Estilos de Alerta (Amarelo/Vermelho) --- */
         .alert-yellow {
             border: 3px solid #ffc107 !important;
             background-color: #fffbe6;
@@ -124,6 +123,28 @@
             background-color: #0056b3;
         }
         
+        /* Estilos para os botões do formulário de autenticação */
+        #authForm button {
+            width: 100%;
+            margin-top: 10px;
+        }
+
+        #authForm button#loginBtn {
+            background-color: #007bff;
+            color: white;
+        }
+
+        #authForm button#signUpBtn {
+            background-color: #28a745;
+            color: white;
+        }
+
+        #authForm button#signOutBtn {
+            background-color: #dc3545;
+            color: white;
+        }
+
+
         /* --- Estilos para o Histórico/Resumo Geral --- */
         #allTasksSummary {
             width: 100%;
@@ -184,30 +205,52 @@
 </head>
 <body>
 
-    <div class="container">
-        <h1><span style="color: #007bff;">🔢</span> Contador de Capacidade Diária</h1>
+    <div id="authForm" class="container">
+        <h1><span style="color: #007bff;">🔒</span> Login / Cadastro</h1>
+        <p style="text-align: center; color: #777;">Acesse sua área privada de planejamento.</p>
 
         <div class="form-group">
-            <label for="taskDate">Selecione a Data:</label>
-            <input type="date" id="taskDate" required>
+            <label for="email">Email:</label>
+            <input type="email" id="email" placeholder="seu@email.com" required>
         </div>
 
         <div class="form-group">
-            <label>Quantas tarefas (Total) você planeja para este dia?</label>
-            <div class="counter-controls">
-                <button id="decrementBtn">-</button>
-                <input type="number" id="numTasks" min="1" value="1" oninput="checkTaskAlert()" required>
-                <button id="incrementBtn">+</button>
-            </div>
+            <label for="password">Senha (mín. 6 caracteres):</label>
+            <input type="password" id="password" required>
         </div>
 
-        <button id="saveButton" onclick="saveCount()">Salvar Contagem Diária</button>
+        <button onclick="handleLoginSignUp(true)" id="loginBtn">Entrar</button>
+        <button onclick="handleLoginSignUp(false)" id="signUpBtn">Cadastrar-se</button>
+        <button onclick="signOut()" style="background-color: #dc3545; margin-top: 20px; display: none;" id="signOutBtn">Sair</button>
     </div>
-    
-    <div id="allTasksSummary">
-        <h2><span style="color: #555;">🗓️</span> Dias Agendados</h2>
-        <div id="scheduledTasksList">
+
+    <div id="appContainer" style="display: none;">
+        <div class="container">
+            <h1><span style="color: #007bff;">🔢</span> Contador de Capacidade Diária</h1>
+
+            <div class="form-group">
+                <label for="taskDate">Selecione a Data:</label>
+                <input type="date" id="taskDate" required>
             </div>
+
+            <div class="form-group">
+                <label>Quantas tarefas (Total) você planeja para este dia?</label>
+                <div class="counter-controls">
+                    <button id="decrementBtn">-</button>
+                    <input type="number" id="numTasks" min="1" value="1" oninput="checkTaskAlert()" required>
+                    <button id="incrementBtn">+</button>
+                </div>
+            </div>
+
+            <button id="saveButton" onclick="saveCount()">Salvar Contagem Diária</button>
+        </div>
+        
+        <div id="allTasksSummary">
+            <h2><span style="color: #555;">🗓️</span> Dias Agendados</h2>
+            <div id="scheduledTasksList">
+                </div>
+            <button onclick="signOut()" id="signOutFooterBtn" style="background-color: #dc3545; width: 100%; margin-top: 20px;">Sair</button>
+        </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -221,6 +264,13 @@
         const { createClient } = supabase;
         const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+        // Novos elementos de interface
+        const appContainer = document.getElementById('appContainer');
+        const authForm = document.getElementById('authForm');
+        const emailInput = document.getElementById('email');
+        const passwordInput = document.getElementById('password');
+
+        // Elementos de Tarefas
         const numTasksInput = document.getElementById('numTasks');
         const taskDateInput = document.getElementById('taskDate');
         const scheduledTasksList = document.getElementById('scheduledTasksList');
@@ -228,8 +278,117 @@
         const decrementBtn = document.getElementById('decrementBtn');
 
         let scheduledTasks = {}; 
+        let currentUserId = null; // Armazena o ID do usuário logado
 
-        // --- Funções de Formato e Alerta (Inalteradas) ---
+        // --- Funções de Autenticação ---
+
+        /** Alterna a visualização entre o formulário de login e o app principal. */
+        function toggleView(isLoggedIn) {
+            authForm.style.display = isLoggedIn ? 'none' : 'block';
+            appContainer.style.display = isLoggedIn ? 'block' : 'none';
+            
+            if (isLoggedIn) {
+                initializeApp(); // Recarrega os dados do usuário após o login
+            }
+        }
+
+        /** Trata Login e Cadastro */
+        async function handleLoginSignUp(isLogin) {
+            const email = emailInput.value;
+            const password = passwordInput.value;
+
+            if (!email || password.length < 6) {
+                alert('Por favor, insira um email válido e uma senha com no mínimo 6 caracteres.');
+                return;
+            }
+
+            let response;
+            if (isLogin) {
+                response = await supabaseClient.auth.signInWithPassword({ email, password });
+            } else {
+                response = await supabaseClient.auth.signUp({ email, password });
+            }
+
+            if (response.error) {
+                alert(`Erro na autenticação: ${response.error.message}`);
+            } else {
+                // Se for sign up, o usuário precisa confirmar o e-mail (Supabase padrão)
+                alert(isLogin ? 'Login realizado com sucesso!' : 'Cadastro realizado! Verifique seu email para confirmar antes de logar.');
+                // O listener do Auth vai lidar com a transição de tela se o login for bem-sucedido
+            }
+        }
+
+        /** Desloga o usuário */
+        async function signOut() {
+            const { error } = await supabaseClient.auth.signOut();
+            if (error) {
+                console.error('Erro ao sair:', error.message);
+            } else {
+                alert('Sessão encerrada.');
+                currentUserId = null;
+                scheduledTasks = {};
+                toggleView(false);
+            }
+        }
+
+        // --- Funções de Tarefas (Atualizadas para usar user_id) ---
+
+        async function loadTasks() {
+            if (!currentUserId) return; 
+
+            // Filtra os dados apenas para o usuário logado
+            const { data, error } = await supabaseClient
+                .from(TABLE_NAME)
+                .select('date, task_count')
+                .eq('user_id', currentUserId)
+                .order('date', { ascending: true }); 
+
+            if (error) {
+                console.error('Erro ao carregar dados:', error.message);
+                return;
+            }
+
+            scheduledTasks = {};
+            data.forEach(item => {
+                scheduledTasks[item.date] = item.task_count; 
+            });
+        }
+
+        async function saveCount() {
+            const selectedDate = taskDateInput.value;
+            const numTasks = parseInt(numTasksInput.value);
+
+            if (!currentUserId) {
+                alert('Você precisa estar logado para salvar as tarefas.');
+                return false;
+            }
+            if (!selectedDate || isNaN(numTasks) || numTasks < 1) {
+                alert('Por favor, selecione uma data e insira um número válido de tarefas (mínimo 1).');
+                return false;
+            }
+            
+            const taskData = {
+                date: selectedDate,
+                task_count: numTasks,
+                user_id: currentUserId // OBRIGATÓRIO: Passar o ID do usuário
+            };
+
+            const { error } = await supabaseClient
+                .from(TABLE_NAME)
+                .upsert([taskData], { onConflict: 'date' }); 
+
+            if (error) {
+                console.error('Erro ao salvar no Supabase:', error.message);
+                alert('Erro ao salvar. Verifique o console e as políticas RLS.');
+                return false;
+            }
+
+            scheduledTasks[selectedDate] = numTasks;
+            displayAllScheduledTasks();
+            return true;
+        }
+
+        // --- Funções de Display e Contador ---
 
         function formatDisplayDate(isoDate) {
             if (!isoDate) return '';
@@ -259,101 +418,6 @@
             return '';
         }
 
-        // --- 2. Funções de Comunicação com o Supabase ---
-
-        async function loadTasks() {
-            const { data, error } = await supabaseClient
-                .from(TABLE_NAME)
-                .select('date, task_count'); 
-
-            if (error) {
-                console.error('Erro ao carregar dados:', error.message);
-                return;
-            }
-
-            scheduledTasks = {};
-            data.forEach(item => {
-                scheduledTasks[item.date] = item.task_count; 
-            });
-        }
-
-        async function saveCount() {
-            const selectedDate = taskDateInput.value;
-            const numTasks = parseInt(numTasksInput.value);
-
-            if (!selectedDate) {
-                alert('Por favor, selecione uma data.');
-                return false; // Retorna falso para indicar falha
-            }
-
-            if (isNaN(numTasks) || numTasks < 1) {
-                alert('Por favor, insira um número válido de tarefas (mínimo 1).');
-                return false;
-            }
-            
-            const taskData = {
-                date: selectedDate,
-                task_count: numTasks
-            };
-
-            const { error } = await supabaseClient
-                .from(TABLE_NAME)
-                .upsert([taskData], { onConflict: 'date' }); 
-
-            if (error) {
-                console.error('Erro ao salvar no Supabase:', error.message);
-                alert('Erro ao salvar. Verifique se a tabela foi criada e as permissões RLS no Supabase.');
-                return false;
-            }
-
-            // Atualiza o cache e o display após o salvamento bem-sucedido
-            scheduledTasks[selectedDate] = numTasks;
-            displayAllScheduledTasks();
-            return true; // Retorna verdadeiro para indicar sucesso
-        }
-
-        // --- NOVO: Funções de Incremento/Decremento ---
-
-        async function incrementTask() {
-            let currentCount = parseInt(numTasksInput.value);
-            // Incrementa
-            currentCount++;
-            numTasksInput.value = currentCount;
-            checkTaskAlert();
-            
-            // Salva no Supabase logo após a alteração (se a data estiver selecionada)
-            if (taskDateInput.value) {
-                const success = await saveCount();
-                if (success) {
-                    console.log(`Contagem incrementada e salva para ${formatDisplayDate(taskDateInput.value)}`);
-                }
-            } else {
-                console.log('Contagem incrementada, mas não salva: nenhuma data selecionada.');
-            }
-        }
-
-        async function decrementTask() {
-            let currentCount = parseInt(numTasksInput.value);
-            // Decrementa, garantindo que o mínimo seja 1
-            if (currentCount > 1) {
-                currentCount--;
-                numTasksInput.value = currentCount;
-                checkTaskAlert();
-                
-                // Salva no Supabase logo após a alteração (se a data estiver selecionada)
-                if (taskDateInput.value) {
-                    const success = await saveCount();
-                    if (success) {
-                        console.log(`Contagem decrementada e salva para ${formatDisplayDate(taskDateInput.value)}`);
-                    }
-                } else {
-                    console.log('Contagem decrementada, mas não salva: nenhuma data selecionada.');
-                }
-            }
-        }
-        
-        // --- Funções de Exibição (Inalteradas) ---
-
         function displayAllScheduledTasks() {
             scheduledTasksList.innerHTML = '';
             
@@ -381,31 +445,64 @@
             });
         }
 
-        // --- 3. Inicialização e Eventos ---
+        async function incrementTask() {
+            let currentCount = parseInt(numTasksInput.value);
+            currentCount++;
+            numTasksInput.value = currentCount;
+            checkTaskAlert();
+            
+            if (taskDateInput.value) {
+                await saveCount();
+            }
+        }
+
+        async function decrementTask() {
+            let currentCount = parseInt(numTasksInput.value);
+            if (currentCount > 1) {
+                currentCount--;
+                numTasksInput.value = currentCount;
+                checkTaskAlert();
+                
+                if (taskDateInput.value) {
+                    await saveCount();
+                }
+            }
+        }
+        
+        // --- 4. Inicialização do App e Eventos ---
 
         async function initializeApp() {
-            await loadTasks(); 
-            
             numTasksInput.value = 1;
-            checkTaskAlert(); 
+            checkTaskAlert();
+            
+            await loadTasks(); 
             displayAllScheduledTasks(); 
         }
 
-        /** Evento: Carrega o valor salvo do dia ao trocar a data. */
+        /** Evento que observa o estado da autenticação do Supabase. */
+        supabaseClient.auth.onAuthStateChange((event, session) => {
+            if (session && session.user) {
+                // USUÁRIO LOGADO
+                currentUserId = session.user.id;
+                toggleView(true);
+            } else {
+                // USUÁRIO DESLOGADO
+                currentUserId = null;
+                toggleView(false);
+            }
+        });
+
+
         taskDateInput.addEventListener('change', function() {
             const selectedDate = taskDateInput.value;
-            
             const savedCount = scheduledTasks[selectedDate] || 1; 
             numTasksInput.value = savedCount;
-            
             checkTaskAlert();
         });
         
-        // NOVO: Adiciona os listeners de clique aos botões de contador
         incrementBtn.addEventListener('click', incrementTask);
         decrementBtn.addEventListener('click', decrementTask);
-
-        window.onload = initializeApp; 
+        
     </script>
     
 </body>
