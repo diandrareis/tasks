@@ -321,7 +321,7 @@
                 loginBtn.style.display = 'none';
                 signUpBtn.style.display = 'block';
                 toggleSignUpBtn.innerText = 'Voltar para Login';
-                toggleSignUpBtn.style.backgroundColor = '#dc3545'; // Mudei a cor para vermelho para destacar a volta
+                toggleSignUpBtn.style.backgroundColor = '#dc3545';
             } else {
                 nameFields.style.display = 'none';
                 loginBtn.style.display = 'block';
@@ -354,13 +354,13 @@
                     return;
                 }
 
-                // 1. Tenta cadastrar o usuário e salva o nome/sobrenome no user_metadata
+                // Tenta cadastrar o usuário e salva o nome/sobrenome no user_metadata
                 response = await supabaseClient.auth.signUp({ 
                     email, 
                     password,
                     options: {
                         data: {
-                            full_name: `${name} ${surname}` // Salva o nome e sobrenome concatenados
+                            full_name: `${name} ${surname}` 
                         }
                     }
                 });
@@ -369,12 +369,10 @@
             if (response.error) {
                 alert(`Erro na autenticação: ${response.error.message}`);
             } else {
-                // Se for sign up, instrui o usuário a confirmar e logar
                 if (!isLogin) {
                     alert('Cadastro realizado! Verifique seu email para confirmar e depois faça o login.');
                     showSignUp(); // Volta para a tela de login
                 }
-                // Se for login, o onAuthStateChange fará a transição e a persistência
             }
         }
 
@@ -390,12 +388,12 @@
             }
         }
 
-        // --- Funções de Tarefas ---
+        // --- Funções de Tarefas (CORRIGIDAS) ---
 
         async function loadTasks() {
             if (!currentUserId) return; 
 
-            // Filtra os dados apenas para o usuário logado (RLS em ação!)
+            // Filtra os dados apenas para o usuário logado (depende do RLS)
             const { data, error } = await supabaseClient
                 .from(TABLE_NAME)
                 .select('date, task_count')
@@ -434,11 +432,13 @@
 
             const { error } = await supabaseClient
                 .from(TABLE_NAME)
-                .upsert([taskData], { onConflict: 'date' }); 
+                // CORREÇÃO CRÍTICA: onConflict agora usa 'date, user_id' para garantir que 
+                // usuários diferentes salvem dados para o mesmo dia sem sobrescrever.
+                .upsert([taskData], { onConflict: 'date, user_id' }); 
 
             if (error) {
                 console.error('Erro ao salvar no Supabase:', error.message);
-                alert('Erro ao salvar. Verifique o console e as políticas RLS.');
+                alert('Erro ao salvar. Verifique o console e as políticas RLS. (Pode ser erro de chave primária/conflito)');
                 return false;
             }
 
